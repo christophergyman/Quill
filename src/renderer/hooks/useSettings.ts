@@ -7,6 +7,10 @@ export function useSettings() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!window.api) {
+      setLoading(false)
+      return
+    }
     window.api.getSettings().then((s) => {
       if (s) setSettingsState(s)
       setLoading(false)
@@ -17,7 +21,7 @@ export function useSettings() {
     async (partial: Partial<AppSettings>) => {
       const updated = { ...settings, ...partial }
       setSettingsState(updated)
-      await window.api.setSettings(partial)
+      await window.api?.setSettings(partial)
     },
     [settings]
   )

@@ -8,14 +8,14 @@ export function Toolbar({ onExportSvg, onGetSnapshot, onClear }: ToolbarProps) {
   const handleExport = async () => {
     const svg = await onExportSvg?.()
     if (svg) {
-      await window.api.exportDiagram('', 'svg', svg)
+      await window.api?.exportDiagram('', 'svg', svg)
     }
   }
 
   const handleSave = () => {
     const snapshot = onGetSnapshot?.()
     if (snapshot) {
-      window.api.exportDiagram('', 'svg', snapshot)
+      window.api?.exportDiagram('', 'svg', snapshot)
     }
   }
 

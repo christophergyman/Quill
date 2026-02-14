@@ -16,7 +16,7 @@ export function useSession() {
 
   const loadSessions = useCallback(async () => {
     setLoading(true)
-    const list = (await window.api.listSessions()) as SessionListItem[]
+    const list = window.api ? ((await window.api.listSessions()) as SessionListItem[]) : []
     setSessions(list)
     setLoading(false)
   }, [setSessions, setLoading])
@@ -24,7 +24,9 @@ export function useSession() {
   const loadSession = useCallback(
     async (id: string) => {
       setLoading(true)
-      const session = (await window.api.getSession(id)) as SessionWithDiagrams | null
+      const session = window.api
+        ? ((await window.api.getSession(id)) as SessionWithDiagrams | null)
+        : null
       setCurrentSession(session)
       setLoading(false)
     },
@@ -33,7 +35,7 @@ export function useSession() {
 
   const deleteSession = useCallback(
     async (id: string) => {
-      await window.api.deleteSession(id)
+      await window.api?.deleteSession(id)
       setSessions(sessions.filter((s) => s.id !== id))
       if (currentSession?.id === id) setCurrentSession(null)
     },

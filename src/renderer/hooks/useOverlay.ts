@@ -6,6 +6,8 @@ export function useOverlay() {
   const { mode, visible, setMode, setVisible } = useOverlayStore()
 
   useEffect(() => {
+    if (!window.api) return
+
     const cleanupMode = window.api.onOverlayModeChanged((newMode) => {
       setMode(newMode as OverlayMode)
     })
@@ -21,7 +23,7 @@ export function useOverlay() {
   }, [setMode, setVisible])
 
   const requestModeChange = (newMode: OverlayMode) => {
-    window.api.setOverlayMode(newMode)
+    window.api?.setOverlayMode(newMode)
   }
 
   return { mode, visible, requestModeChange }

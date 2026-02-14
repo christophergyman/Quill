@@ -12,6 +12,8 @@ export function useRecording() {
   const workletRef = useRef<AudioWorkletNode | null>(null)
 
   useEffect(() => {
+    if (!window.api) return
+
     const cleanupState = window.api.onRecordingStateChanged((newState, sessionId) => {
       setState(newState as 'idle' | 'recording' | 'processing' | 'complete' | 'error', sessionId)
     })
@@ -60,13 +62,13 @@ export function useRecording() {
 
       worklet.port.onmessage = (event) => {
         const samples = event.data as Float32Array
-        window.api.sendAudioChunk(samples, AUDIO_SAMPLE_RATE)
+        window.api?.sendAudioChunk(samples, AUDIO_SAMPLE_RATE)
       }
 
       source.connect(worklet)
       worklet.connect(audioContext.destination)
 
-      await window.api.startRecording()
+      await window.api?.startRecording()
     } catch (err) {
       console.error('Failed to start recording:', err)
       setState('error')
@@ -89,7 +91,7 @@ export function useRecording() {
     }
 
     setState('processing')
-    await window.api.stopRecording()
+    await window.api?.stopRecording()
   }, [setState])
 
   return {
