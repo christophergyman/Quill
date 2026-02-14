@@ -41,7 +41,8 @@ export class OllamaLLMProcessor implements LLMProcessor {
         ],
         stream: false,
         options: { temperature: 0.3 }
-      })
+      }),
+      signal: AbortSignal.timeout(120_000)
     })
 
     if (!response.ok) {

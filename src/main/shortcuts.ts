@@ -1,6 +1,6 @@
 import { globalShortcut } from 'electron'
-import { DEFAULT_SETTINGS } from '../shared/types/settings'
 import { createLogger } from '../shared/logger'
+import { getSettings } from './storage/settings'
 
 const logger = createLogger('shortcuts')
 
@@ -10,7 +10,7 @@ interface ShortcutCallbacks {
 }
 
 export function registerShortcuts(callbacks: ShortcutCallbacks) {
-  const { shortcuts } = DEFAULT_SETTINGS
+  const { shortcuts } = getSettings()
 
   const registered = globalShortcut.register(shortcuts.toggleOverlay, () => {
     logger.debug('Toggle overlay shortcut pressed')

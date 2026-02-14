@@ -16,7 +16,7 @@ export default function TldrawCanvas({ onEditorReady }: TldrawCanvasProps) {
 
   return (
     <div className="h-full w-full">
-      <Tldraw onMount={handleMount} hideUi={false} inferDarkMode={false} />
+      <Tldraw onMount={handleMount} hideUi inferDarkMode={false} />
     </div>
   )
 }

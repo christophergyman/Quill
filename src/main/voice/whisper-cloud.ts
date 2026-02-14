@@ -34,7 +34,8 @@ export class WhisperCloudBackend implements VoiceBackend {
       headers: {
         Authorization: `Bearer ${this.apiKey}`
       },
-      body: formData
+      body: formData,
+      signal: AbortSignal.timeout(60_000)
     })
 
     if (!response.ok) {

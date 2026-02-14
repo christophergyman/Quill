@@ -47,7 +47,8 @@ export class OpenAILLMProcessor implements LLMProcessor {
         ],
         temperature: 0.3,
         max_tokens: 2048
-      })
+      }),
+      signal: AbortSignal.timeout(30_000)
     })
 
     if (!response.ok) {

@@ -33,14 +33,14 @@ export function useSession() {
     [setCurrentSession, setLoading]
   )
 
-  const deleteSession = useCallback(
-    async (id: string) => {
-      await window.api?.deleteSession(id)
-      setSessions(sessions.filter((s) => s.id !== id))
-      if (currentSession?.id === id) setCurrentSession(null)
-    },
-    [sessions, currentSession, setSessions, setCurrentSession]
-  )
+  const deleteSession = useCallback(async (id: string) => {
+    await window.api?.deleteSession(id)
+    // Use store setState to avoid stale closure over sessions/currentSession
+    useSessionsStore.setState((state) => ({
+      sessions: state.sessions.filter((s) => s.id !== id),
+      currentSession: state.currentSession?.id === id ? null : state.currentSession
+    }))
+  }, [])
 
   return {
     sessions,

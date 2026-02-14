@@ -8,6 +8,8 @@ import { registerIpcHandlers } from './ipc/handlers'
 import { registerShortcuts } from './shortcuts'
 import { setLogFilePath, createLogger } from '../shared/logger'
 import { LOG_FILENAME } from '../shared/constants'
+import { initDatabase, closeDatabase } from './storage/database'
+import { IpcChannel } from '../shared/types/ipc'
 
 // Initialize file logging in production
 if (process.env.NODE_ENV === 'production') {
@@ -26,6 +28,8 @@ app.dock?.hide()
 
 app.whenReady().then(() => {
   logger.info('Quill starting up')
+
+  initDatabase()
 
   overlayWindow = createOverlayWindow()
 
@@ -82,18 +86,19 @@ function toggleDrawingMode() {
   if (overlayMode === 'passthrough') {
     overlayMode = 'drawing'
     overlayWindow.setIgnoreMouseEvents(false)
-    overlayWindow.webContents.send('overlay:mode-changed', 'drawing')
+    overlayWindow.webContents.send(IpcChannel.OVERLAY_MODE_CHANGED, 'drawing')
     logger.debug('Switched to drawing mode')
   } else {
     overlayMode = 'passthrough'
     overlayWindow.setIgnoreMouseEvents(true, { forward: true })
-    overlayWindow.webContents.send('overlay:mode-changed', 'passthrough')
+    overlayWindow.webContents.send(IpcChannel.OVERLAY_MODE_CHANGED, 'passthrough')
     logger.debug('Switched to passthrough mode')
   }
 }
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll()
+  closeDatabase()
   logger.info('Quill shutting down')
 })
 

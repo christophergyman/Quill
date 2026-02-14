@@ -66,10 +66,12 @@ export function getSessionWithDiagrams(id: string): SessionWithDiagrams | null {
   }
 }
 
-export function listSessions(query?: string): SessionListItem[] {
+export function listSessions(query?: string, limit = 100, offset = 0): SessionListItem[] {
   const db = getDatabase()
 
   if (query && query.trim()) {
+    // Escape FTS5 special characters by wrapping in double quotes
+    const sanitized = '"' + query.trim().replace(/"/g, '""') + '"'
     const rows = db
       .prepare(
         `SELECT s.id, s.created_at, s.title, s.raw_text, s.duration_ms,
@@ -77,9 +79,10 @@ export function listSessions(query?: string): SessionListItem[] {
          FROM sessions s
          JOIN sessions_fts ON sessions_fts.rowid = s.rowid
          WHERE sessions_fts MATCH ?
-         ORDER BY s.created_at DESC`
+         ORDER BY s.created_at DESC
+         LIMIT ? OFFSET ?`
       )
-      .all(query.trim()) as SessionListRow[]
+      .all(sanitized, limit, offset) as SessionListRow[]
 
     return rows.map(rowToSessionListItem)
   }
@@ -89,9 +92,10 @@ export function listSessions(query?: string): SessionListItem[] {
       `SELECT s.id, s.created_at, s.title, s.raw_text, s.duration_ms,
               EXISTS(SELECT 1 FROM diagrams d WHERE d.session_id = s.id) as has_diagram
        FROM sessions s
-       ORDER BY s.created_at DESC`
+       ORDER BY s.created_at DESC
+       LIMIT ? OFFSET ?`
     )
-    .all() as SessionListRow[]
+    .all(limit, offset) as SessionListRow[]
 
   return rows.map(rowToSessionListItem)
 }

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 
 interface DrawingCanvasProps {
   active: boolean
@@ -9,10 +9,14 @@ interface DrawingCanvasProps {
 const TldrawCanvas = lazy(() => import('./TldrawCanvas'))
 
 export function DrawingCanvas({ active, onEditorReady }: DrawingCanvasProps) {
-  if (!active) return null
+  // Track whether the canvas has ever been activated to avoid loading tldraw eagerly
+  const [mounted, setMounted] = useState(false)
+  if (active && !mounted) setMounted(true)
+
+  if (!mounted) return null
 
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0" style={{ display: active ? 'block' : 'none' }}>
       <Suspense
         fallback={
           <div className="flex h-full w-full items-center justify-center">

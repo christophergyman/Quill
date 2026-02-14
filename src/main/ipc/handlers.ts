@@ -6,12 +6,25 @@ import { createLLMProcessor } from '../llm/factory'
 import { createLogger } from '../../shared/logger'
 import type { VoiceBackend } from '../voice/backend'
 import type { LLMProcessor } from '../llm/processor'
-import { DEFAULT_SETTINGS } from '../../shared/types/settings'
+import type { AppSettings } from '../../shared/types/settings'
+import { getSettings, setSettings, decryptApiKey } from '../storage/settings'
+import {
+  createSession,
+  getSessionWithDiagrams,
+  listSessions,
+  deleteSession
+} from '../storage/sessions'
+import {
+  emitRecordingStateChanged,
+  emitTranscriptionComplete,
+  emitTranscriptionError
+} from './events'
 
 const logger = createLogger('ipc')
 
 let audioProcessor: AudioProcessor | null = null
 let isRecording = false
+let isProcessing = false
 
 export function registerIpcHandlers() {
   // --- Clipboard ---
@@ -27,53 +40,70 @@ export function registerIpcHandlers() {
 
   // --- Recording ---
   ipcMain.handle(IpcChannel.RECORDING_START, () => {
+    if (isRecording || isProcessing) {
+      logger.warn('Recording already in progress, ignoring start')
+      return
+    }
     logger.info('Recording started')
     audioProcessor = new AudioProcessor()
     isRecording = true
   })
 
   ipcMain.handle(IpcChannel.RECORDING_STOP, async (event) => {
+    if (!isRecording) {
+      logger.warn('Not recording, ignoring stop')
+      return null
+    }
     logger.info('Recording stopped')
     isRecording = false
+    isProcessing = true
 
-    if (!audioProcessor) {
+    // Capture and clear the processor immediately to prevent race conditions
+    const processor = audioProcessor
+    audioProcessor = null
+
+    if (!processor) {
       logger.warn('No audio processor — nothing to transcribe')
+      isProcessing = false
       return null
     }
 
-    const durationMs = audioProcessor.getDurationMs()
-    const totalSamples = audioProcessor.getTotalSamples()
+    const durationMs = processor.getDurationMs()
+    const totalSamples = processor.getTotalSamples()
     logger.info('Recorded %d samples (%.1fs)', totalSamples, durationMs / 1000)
 
     if (totalSamples === 0) {
-      audioProcessor = null
+      isProcessing = false
       return null
     }
 
     const win = BrowserWindow.fromWebContents(event.sender)
     if (win) {
-      win.webContents.send(IpcChannel.RECORDING_STATE_CHANGED, 'processing')
+      emitRecordingStateChanged(win, 'processing')
     }
 
     try {
-      const wavBuffer = audioProcessor.toWav()
-      audioProcessor = null
+      const wavBuffer = processor.toWav()
+
+      // Load user settings
+      const settings: AppSettings = getSettings()
 
       // Transcribe
-      const settings = DEFAULT_SETTINGS
       let voiceBackend: VoiceBackend | null = null
       try {
         voiceBackend = await createVoiceBackend({
           type: settings.voice.backend,
           model: settings.voice.model,
           language: settings.voice.language,
-          apiKey: settings.voice.openaiApiKey
+          apiKey: settings.voice.openaiApiKey ? decryptApiKey(settings.voice.openaiApiKey) : ''
         })
       } catch (err) {
         logger.error('Failed to create voice backend: %s', err)
         if (win) {
-          win.webContents.send(IpcChannel.TRANSCRIPTION_ERROR, String(err))
+          emitTranscriptionError(win, String(err))
+          emitRecordingStateChanged(win, 'error')
         }
+        isProcessing = false
         return null
       }
 
@@ -93,7 +123,7 @@ export function registerIpcHandlers() {
               settings.llm.backend === 'openai'
                 ? settings.llm.openaiModel
                 : settings.llm.ollamaModel,
-            apiKey: settings.llm.openaiApiKey,
+            apiKey: settings.llm.openaiApiKey ? decryptApiKey(settings.llm.openaiApiKey) : '',
             ollamaUrl: settings.llm.ollamaUrl
           })
           const result = await llmProcessor.cleanup(transcription.text)
@@ -109,7 +139,19 @@ export function registerIpcHandlers() {
       // Copy to clipboard
       clipboard.writeText(cleanedText)
 
+      // Persist session to database
+      const session = createSession({
+        rawText: transcription.text,
+        cleanedText,
+        summary,
+        durationMs,
+        voiceBackend: settings.voice.backend,
+        llmEnabled: settings.llm.enabled,
+        language: settings.voice.language
+      })
+
       const result = {
+        sessionId: session.id,
         rawText: transcription.text,
         cleanedText,
         summary,
@@ -117,18 +159,19 @@ export function registerIpcHandlers() {
       }
 
       if (win) {
-        win.webContents.send(IpcChannel.TRANSCRIPTION_COMPLETE, result)
-        win.webContents.send(IpcChannel.RECORDING_STATE_CHANGED, 'complete')
+        emitTranscriptionComplete(win, result)
+        emitRecordingStateChanged(win, 'complete', session.id)
       }
 
+      isProcessing = false
       return result
     } catch (err) {
       logger.error('Transcription pipeline failed: %s', err)
       if (win) {
-        win.webContents.send(IpcChannel.TRANSCRIPTION_ERROR, String(err))
-        win.webContents.send(IpcChannel.RECORDING_STATE_CHANGED, 'error')
+        emitTranscriptionError(win, String(err))
+        emitRecordingStateChanged(win, 'error')
       }
-      audioProcessor = null
+      isProcessing = false
       return null
     }
   })
@@ -138,7 +181,7 @@ export function registerIpcHandlers() {
     IpcChannel.AUDIO_SEND_CHUNK,
     (_event, samples: Float32Array, _sampleRate: number) => {
       if (isRecording && audioProcessor) {
-        audioProcessor.addChunk(samples)
+        audioProcessor.addChunk(new Float32Array(samples))
       }
     }
   )
@@ -146,33 +189,58 @@ export function registerIpcHandlers() {
   // --- Settings ---
   ipcMain.handle(IpcChannel.SETTINGS_GET, () => {
     logger.debug('Settings get requested')
-    return DEFAULT_SETTINGS
+    return getSettings()
   })
 
-  ipcMain.handle(IpcChannel.SETTINGS_SET, (_event, _settings: unknown) => {
+  ipcMain.handle(IpcChannel.SETTINGS_SET, (_event, settings: Partial<AppSettings>) => {
     logger.debug('Settings set requested')
+    return setSettings(settings)
   })
 
   // --- Sessions ---
-  ipcMain.handle(IpcChannel.SESSION_LIST, () => {
+  ipcMain.handle(IpcChannel.SESSION_LIST, (_event, query?: string) => {
     logger.debug('Session list requested')
-    return []
+    return listSessions(query)
   })
 
-  ipcMain.handle(IpcChannel.SESSION_GET, (_event, _id: string) => {
-    logger.debug('Session get requested')
-    return null
+  ipcMain.handle(IpcChannel.SESSION_GET, (_event, id: string) => {
+    logger.debug('Session get requested: %s', id)
+    return getSessionWithDiagrams(id)
   })
 
-  ipcMain.handle(IpcChannel.SESSION_DELETE, (_event, _id: string) => {
-    logger.debug('Session delete requested')
+  ipcMain.handle(IpcChannel.SESSION_DELETE, (_event, id: string) => {
+    logger.debug('Session delete requested: %s', id)
+    deleteSession(id)
+  })
+
+  // --- Session export ---
+  ipcMain.handle(IpcChannel.SESSION_EXPORT, (_event, id: string, format: string) => {
+    logger.debug('Session export requested: %s (%s)', id, format)
+    const session = getSessionWithDiagrams(id)
+    if (!session) return null
+
+    if (format === 'json') {
+      return JSON.stringify(session, null, 2)
+    }
+
+    // Default: plain text export
+    const parts: string[] = []
+    if (session.title) parts.push(session.title)
+    parts.push(`Date: ${session.createdAt}`)
+    parts.push(`Duration: ${Math.round(session.durationMs / 1000)}s`)
+    if (session.summary) {
+      parts.push('', '--- Summary ---', session.summary)
+    }
+    parts.push('', '--- Transcription ---', session.cleanedText || session.rawText)
+    return parts.join('\n')
   })
 
   // --- Diagram export ---
   ipcMain.handle(
     IpcChannel.DIAGRAM_EXPORT,
-    (_event, _sessionId: string, _format: string, _data: string) => {
-      logger.debug('Diagram export requested')
+    (_event, sessionId: string, format: string, _data: string) => {
+      logger.debug('Diagram export requested: session=%s format=%s', sessionId, format)
+      // TODO: save diagram data via saveDiagram() when tldraw export pipeline is complete
     }
   )
 

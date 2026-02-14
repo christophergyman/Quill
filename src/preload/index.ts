@@ -62,8 +62,8 @@ const api = {
 
   onOverlayModeChanged: (callback: (mode: string) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, mode: string) => callback(mode)
-    ipcRenderer.on('overlay:mode-changed', listener)
-    return () => ipcRenderer.removeListener('overlay:mode-changed', listener)
+    ipcRenderer.on(IpcChannel.OVERLAY_MODE_CHANGED, listener)
+    return () => ipcRenderer.removeListener(IpcChannel.OVERLAY_MODE_CHANGED, listener)
   },
 
   onOverlayVisibilityChanged: (callback: (visible: boolean) => void) => {

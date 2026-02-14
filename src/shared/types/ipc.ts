@@ -18,7 +18,8 @@ export const IpcChannel = {
   TRANSCRIPTION_PARTIAL: 'transcription:partial',
   TRANSCRIPTION_COMPLETE: 'transcription:complete',
   TRANSCRIPTION_ERROR: 'transcription:error',
-  OVERLAY_VISIBILITY_CHANGED: 'overlay:visibility-changed'
+  OVERLAY_VISIBILITY_CHANGED: 'overlay:visibility-changed',
+  OVERLAY_MODE_CHANGED: 'overlay:mode-changed'
 } as const
 
 export type IpcChannel = (typeof IpcChannel)[keyof typeof IpcChannel]

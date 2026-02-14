@@ -1,8 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react'
 import { useRecordingStore } from '../stores/recording'
 import type { TranscriptionResult } from '@shared/types/ipc'
-
-const AUDIO_SAMPLE_RATE = 16000
+import { AUDIO_SAMPLE_RATE } from '@shared/constants'
 
 export function useRecording() {
   const { state, partialText, finalText, setState, setPartialText, setFinalText, reset } =
@@ -27,12 +26,35 @@ export function useRecording() {
       setFinalText(r.cleanedText || r.rawText)
     })
 
+    const cleanupError = window.api.onTranscriptionError(() => {
+      setState('error')
+    })
+
     return () => {
       cleanupState()
       cleanupPartial()
       cleanupComplete()
+      cleanupError()
     }
   }, [setState, setPartialText, setFinalText])
+
+  // Clean up audio resources on unmount
+  useEffect(() => {
+    return () => {
+      if (workletRef.current) {
+        workletRef.current.disconnect()
+        workletRef.current = null
+      }
+      if (contextRef.current) {
+        contextRef.current.close()
+        contextRef.current = null
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop())
+        streamRef.current = null
+      }
+    }
+  }, [])
 
   const startRecording = useCallback(async () => {
     try {

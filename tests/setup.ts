@@ -1,11 +1,12 @@
 import '@testing-library/jest-dom/vitest'
+import { DEFAULT_SETTINGS } from '../src/shared/types/settings'
 
 // Mock window.api for renderer tests
 const mockApi = {
   startRecording: vi.fn(),
   stopRecording: vi.fn(),
   sendAudioChunk: vi.fn(),
-  getSettings: vi.fn().mockResolvedValue(null),
+  getSettings: vi.fn().mockResolvedValue(DEFAULT_SETTINGS),
   setSettings: vi.fn(),
   listSessions: vi.fn().mockResolvedValue([]),
   getSession: vi.fn().mockResolvedValue(null),

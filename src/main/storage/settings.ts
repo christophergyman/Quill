@@ -24,20 +24,25 @@ export function setSettings(partial: Partial<AppSettings>): AppSettings {
 }
 
 export function encryptApiKey(key: string): string {
+  if (!key) return ''
   if (!safeStorage.isEncryptionAvailable()) {
-    logger.warn('safeStorage encryption not available, storing key as-is')
-    return key
+    throw new Error(
+      'Cannot securely store API key — safeStorage encryption is not available on this system'
+    )
   }
   return safeStorage.encryptString(key).toString('base64')
 }
 
 export function decryptApiKey(encrypted: string): string {
+  if (!encrypted) return ''
   if (!safeStorage.isEncryptionAvailable()) {
+    logger.warn('safeStorage not available, returning key as-is (may be unencrypted)')
     return encrypted
   }
   try {
     return safeStorage.decryptString(Buffer.from(encrypted, 'base64'))
   } catch {
+    // Key may have been stored before encryption was available
     logger.warn('Failed to decrypt API key, returning as-is')
     return encrypted
   }

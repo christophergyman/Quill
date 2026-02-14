@@ -90,7 +90,7 @@ export function SessionDetail({ session, onDelete }: SessionDetailProps) {
               >
                 {diagram.pngData ? (
                   <img
-                    src={`data:image/png;base64,${Buffer.from(diagram.pngData).toString('base64')}`}
+                    src={`data:image/png;base64,${typeof diagram.pngData === 'string' ? diagram.pngData : btoa(String.fromCharCode(...new Uint8Array(diagram.pngData as ArrayBufferLike)))}`}
                     alt="Diagram"
                     className="w-full rounded"
                   />
