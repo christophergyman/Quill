@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useOverlay } from '../../hooks/useOverlay'
 import { useRecordingStore } from '../../stores/recording'
+import { useTldraw } from '../../hooks/useTldraw'
 import { TranscriptionPanel } from './TranscriptionPanel'
 import { StatusIndicator } from './StatusIndicator'
 import { Toolbar } from './Toolbar'
@@ -9,6 +10,7 @@ import { DrawingCanvas } from './DrawingCanvas'
 export function OverlayRoot() {
   const { mode } = useOverlay()
   const { state: recordingState, partialText, finalText } = useRecordingStore()
+  const { setEditor, getSnapshot, exportAsSvg, clear } = useTldraw()
 
   const transcription = finalText || partialText
 
@@ -22,8 +24,11 @@ export function OverlayRoot() {
       {/* Drawing mode backdrop */}
       {mode === 'drawing' && <div className="absolute inset-0 bg-black/[0.03]" />}
 
-      {/* Drawing canvas (Phase 6 — tldraw) */}
-      <DrawingCanvas active={mode === 'drawing'} />
+      {/* Drawing canvas (tldraw) */}
+      <DrawingCanvas
+        active={mode === 'drawing'}
+        onEditorReady={(editor) => setEditor(editor as Parameters<typeof setEditor>[0])}
+      />
 
       {/* Status indicator — top right */}
       <div className="absolute top-4 right-4 z-50">
@@ -40,7 +45,7 @@ export function OverlayRoot() {
       {/* Toolbar — only visible in drawing mode */}
       {mode === 'drawing' && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50">
-          <Toolbar />
+          <Toolbar onExportSvg={exportAsSvg} onGetSnapshot={getSnapshot} onClear={clear} />
         </div>
       )}
     </div>

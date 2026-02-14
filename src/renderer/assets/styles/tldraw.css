@@ -1,0 +1,38 @@
+/* Override tldraw styles for transparent overlay mode */
+
+.tl-container {
+  background: transparent !important;
+}
+
+.tl-background {
+  background: transparent !important;
+}
+
+/* Minimal toolbar styling */
+.tlui-toolbar {
+  backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.6) !important;
+  border-radius: 12px !important;
+  border: none !important;
+}
+
+.tlui-toolbar__extras {
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(12px);
+  border-radius: 12px !important;
+}
+
+/* Style panels */
+.tlui-style-panel {
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(12px);
+  border-radius: 12px !important;
+  border: none !important;
+}
+
+/* Hide elements not needed in overlay mode */
+.tlui-menu-zone,
+.tlui-navigation-zone__toggle,
+.tlui-minimap {
+  display: none !important;
+}
