@@ -1,0 +1,12 @@
+node_modules/
+out/
+dist/
+*.dmg
+.env
+.env.local
+.DS_Store
+*.log
+resources/whisper-models/*.bin
+coverage/
+test-results/
+playwright-report/
