@@ -1,6 +1,5 @@
 import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
-import { is } from 'electron-vite/runtime'
 
 export function createOverlayWindow(): BrowserWindow {
   const primaryDisplay = screen.getPrimaryDisplay()
@@ -31,7 +30,7 @@ export function createOverlayWindow(): BrowserWindow {
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   win.setIgnoreMouseEvents(true, { forward: true })
 
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+  if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'))

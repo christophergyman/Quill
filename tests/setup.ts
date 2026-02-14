@@ -1,0 +1,28 @@
+import '@testing-library/jest-dom/vitest'
+
+// Mock window.api for renderer tests
+const mockApi = {
+  startRecording: vi.fn(),
+  stopRecording: vi.fn(),
+  sendAudioChunk: vi.fn(),
+  getSettings: vi.fn().mockResolvedValue(null),
+  setSettings: vi.fn(),
+  listSessions: vi.fn().mockResolvedValue([]),
+  getSession: vi.fn().mockResolvedValue(null),
+  deleteSession: vi.fn(),
+  exportSession: vi.fn(),
+  setOverlayMode: vi.fn(),
+  writeClipboard: vi.fn(),
+  exportDiagram: vi.fn(),
+  onRecordingStateChanged: vi.fn().mockReturnValue(() => {}),
+  onTranscriptionPartial: vi.fn().mockReturnValue(() => {}),
+  onTranscriptionComplete: vi.fn().mockReturnValue(() => {}),
+  onTranscriptionError: vi.fn().mockReturnValue(() => {}),
+  onOverlayModeChanged: vi.fn().mockReturnValue(() => {}),
+  onOverlayVisibilityChanged: vi.fn().mockReturnValue(() => {})
+}
+
+Object.defineProperty(window, 'api', {
+  value: mockApi,
+  writable: true
+})

@@ -1,6 +1,5 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
-import { is } from 'electron-vite/runtime'
 
 export function createLibraryWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -16,7 +15,7 @@ export function createLibraryWindow(): BrowserWindow {
     }
   })
 
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+  if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#/library')
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/library' })
