@@ -12,6 +12,7 @@ const logger = createLogger('main')
 let overlayWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let libraryWindow: BrowserWindow | null = null
+let overlayMode: 'passthrough' | 'drawing' = 'passthrough'
 
 app.dock?.hide()
 
@@ -55,23 +56,31 @@ function toggleOverlay() {
 
   if (overlayWindow.isVisible()) {
     overlayWindow.hide()
+    // Reset to passthrough when hiding
+    overlayMode = 'passthrough'
     overlayWindow.setIgnoreMouseEvents(true, { forward: true })
+    logger.debug('Overlay hidden')
   } else {
     overlayWindow.show()
     overlayWindow.setIgnoreMouseEvents(true, { forward: true })
+    overlayMode = 'passthrough'
+    logger.debug('Overlay shown')
   }
 }
 
 function toggleDrawingMode() {
   if (!overlayWindow || overlayWindow.isDestroyed() || !overlayWindow.isVisible()) return
 
-  const isPassthrough = overlayWindow.isAlwaysOnTop()
-  if (isPassthrough) {
+  if (overlayMode === 'passthrough') {
+    overlayMode = 'drawing'
     overlayWindow.setIgnoreMouseEvents(false)
     overlayWindow.webContents.send('overlay:mode-changed', 'drawing')
+    logger.debug('Switched to drawing mode')
   } else {
+    overlayMode = 'passthrough'
     overlayWindow.setIgnoreMouseEvents(true, { forward: true })
     overlayWindow.webContents.send('overlay:mode-changed', 'passthrough')
+    logger.debug('Switched to passthrough mode')
   }
 }
 
