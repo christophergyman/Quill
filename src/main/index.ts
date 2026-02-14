@@ -1,11 +1,19 @@
 import { app, BrowserWindow, globalShortcut } from 'electron'
+import { join } from 'path'
 import { createTray } from './tray'
 import { createOverlayWindow } from './windows/overlay'
 import { createSettingsWindow } from './windows/settings'
 import { createLibraryWindow } from './windows/library'
 import { registerIpcHandlers } from './ipc/handlers'
 import { registerShortcuts } from './shortcuts'
-import { createLogger } from '../shared/logger'
+import { setLogFilePath, createLogger } from '../shared/logger'
+import { LOG_FILENAME } from '../shared/constants'
+
+// Initialize file logging in production
+if (process.env.NODE_ENV === 'production') {
+  const logDir = join(process.env.HOME || '~', 'Library', 'Logs', 'Quill')
+  setLogFilePath(join(logDir, LOG_FILENAME))
+}
 
 const logger = createLogger('main')
 
