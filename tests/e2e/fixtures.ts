@@ -1,4 +1,4 @@
-import { test as base, _electron, type ElectronApplication, type Page } from '@playwright/test'
+import { test, expect, _electron, type ElectronApplication, type Page } from '@playwright/test'
 import { resolve } from 'path'
 import { mkdtempSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
@@ -7,108 +7,118 @@ import { join } from 'path'
 const PRELOAD_PATH = resolve(__dirname, '../../out/preload/index.js')
 const RENDERER_PATH = resolve(__dirname, '../../out/renderer/index.html')
 
+export type AppContext = {
+  app: ElectronApplication
+  userData: string
+}
+
+export async function launchApp(): Promise<AppContext> {
+  const userData = mkdtempSync(join(tmpdir(), 'quill-test-'))
+
+  const app = await _electron.launch({
+    args: [resolve(__dirname, '../../out/main/index.js')],
+    env: {
+      ...process.env,
+      NODE_ENV: 'test',
+      QUILL_TEST_USER_DATA: userData
+    }
+  })
+
+  return { app, userData }
+}
+
+export async function closeApp(ctx: AppContext) {
+  await ctx.app.close()
+  rmSync(ctx.userData, { recursive: true, force: true })
+}
+
+export async function getOverlayPage(app: ElectronApplication): Promise<Page> {
+  const page = await app.firstWindow()
+  await page.waitForSelector('#root', { timeout: 5_000 })
+  return page
+}
+
+export async function openSettingsPage(app: ElectronApplication): Promise<Page> {
+  const preload = PRELOAD_PATH
+  const renderer = RENDERER_PATH
+  await app.evaluate(
+    async ({ BrowserWindow }, { preload, renderer }) => {
+      const win = new BrowserWindow({
+        width: 600,
+        height: 500,
+        title: 'Quill Settings',
+        show: true,
+        resizable: false,
+        webPreferences: {
+          preload,
+          contextIsolation: true,
+          nodeIntegration: false,
+          sandbox: false
+        }
+      })
+      win.loadFile(renderer, { hash: '/settings' })
+    },
+    { preload, renderer }
+  )
+
+  const page = await waitForWindow(app, /settings/)
+  await page.waitForSelector('#root', { timeout: 5_000 })
+  return page
+}
+
+export async function openLibraryPage(app: ElectronApplication): Promise<Page> {
+  const preload = PRELOAD_PATH
+  const renderer = RENDERER_PATH
+  await app.evaluate(
+    async ({ BrowserWindow }, { preload, renderer }) => {
+      const win = new BrowserWindow({
+        width: 900,
+        height: 650,
+        title: 'Quill Library',
+        show: true,
+        webPreferences: {
+          preload,
+          contextIsolation: true,
+          nodeIntegration: false,
+          sandbox: false
+        }
+      })
+      win.loadFile(renderer, { hash: '/library' })
+    },
+    { preload, renderer }
+  )
+
+  const page = await waitForWindow(app, /library/)
+  await page.waitForSelector('#root', { timeout: 5_000 })
+  return page
+}
+
 async function waitForWindow(
   app: ElectronApplication,
   urlPattern: RegExp,
-  timeout = 10_000
+  timeout = 5_000
 ): Promise<Page> {
-  const start = Date.now()
-  while (Date.now() - start < timeout) {
-    const windows = app.windows()
-    for (const win of windows) {
-      if (urlPattern.test(win.url())) return win
-    }
-    await new Promise((r) => setTimeout(r, 200))
+  // Check existing windows first
+  for (const win of app.windows()) {
+    if (urlPattern.test(win.url())) return win
   }
-  throw new Error(`Timed out waiting for window matching ${urlPattern}`)
-}
 
-type Fixtures = {
-  electronApp: ElectronApplication
-  overlayPage: Page
-  settingsPage: Page
-  libraryPage: Page
-}
+  // Wait for new window via event
+  return new Promise<Page>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Timed out waiting for window matching ${urlPattern}`))
+    }, timeout)
 
-export const test = base.extend<Fixtures>({
-  electronApp: async ({}, use) => {
-    const userData = mkdtempSync(join(tmpdir(), 'quill-test-'))
-
-    const app = await _electron.launch({
-      args: [resolve(__dirname, '../../out/main/index.js')],
-      env: {
-        ...process.env,
-        NODE_ENV: 'test',
-        QUILL_TEST_USER_DATA: userData
+    const onWindow = (page: Page) => {
+      if (urlPattern.test(page.url())) {
+        clearTimeout(timer)
+        app.off('window', onWindow)
+        resolve(page)
       }
-    })
+    }
 
-    await use(app)
+    app.on('window', onWindow)
+  })
+}
 
-    await app.close()
-    rmSync(userData, { recursive: true, force: true })
-  },
-
-  overlayPage: async ({ electronApp }, use) => {
-    const page = await electronApp.firstWindow()
-    await page.waitForSelector('#root', { timeout: 10_000 })
-    await use(page)
-  },
-
-  settingsPage: async ({ electronApp }, use) => {
-    const preload = PRELOAD_PATH
-    const renderer = RENDERER_PATH
-    await electronApp.evaluate(
-      async ({ BrowserWindow }, { preload, renderer }) => {
-        const win = new BrowserWindow({
-          width: 600,
-          height: 500,
-          title: 'Quill Settings',
-          show: true,
-          resizable: false,
-          webPreferences: {
-            preload,
-            contextIsolation: true,
-            nodeIntegration: false,
-            sandbox: false
-          }
-        })
-        win.loadFile(renderer, { hash: '/settings' })
-      },
-      { preload, renderer }
-    )
-
-    const page = await waitForWindow(electronApp, /settings/)
-    await page.waitForSelector('#root', { timeout: 10_000 })
-    await use(page)
-  },
-
-  libraryPage: async ({ electronApp }, use) => {
-    const preload = PRELOAD_PATH
-    const renderer = RENDERER_PATH
-    await electronApp.evaluate(
-      async ({ BrowserWindow }, { preload, renderer }) => {
-        const win = new BrowserWindow({
-          width: 900,
-          height: 650,
-          title: 'Quill Library',
-          show: true,
-          webPreferences: {
-            preload,
-            contextIsolation: true,
-            nodeIntegration: false,
-            sandbox: false
-          }
-        })
-        win.loadFile(renderer, { hash: '/library' })
-      },
-      { preload, renderer }
-    )
-
-    const page = await waitForWindow(electronApp, /library/)
-    await page.waitForSelector('#root', { timeout: 10_000 })
-    await use(page)
-  }
-})
-
-export { expect } from '@playwright/test'
+export { test, expect }

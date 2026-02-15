@@ -1,5 +1,5 @@
-import { test, expect } from './fixtures'
-import type { ElectronApplication } from '@playwright/test'
+import { test, expect, type AppContext, launchApp, closeApp, openLibraryPage } from './fixtures'
+import type { ElectronApplication, Page } from '@playwright/test'
 
 async function seedSession(electronApp: ElectronApplication) {
   return electronApp.evaluate(async () => {
@@ -69,8 +69,36 @@ async function seedSessionWithDiagram(electronApp: ElectronApplication) {
   })
 }
 
-test.describe('Library Window', () => {
-  test('shows empty state', async ({ libraryPage }) => {
+async function clearDatabase(electronApp: ElectronApplication) {
+  await electronApp.evaluate(async () => {
+    const db = (globalThis as any).__quillTestDb
+    db.prepare('DELETE FROM diagrams').run()
+    db.prepare('DELETE FROM sessions').run()
+  })
+}
+
+test.describe.serial('Library Window', () => {
+  let ctx: AppContext
+  let electronApp: ElectronApplication
+  let libraryPage: Page
+
+  test.beforeAll(async () => {
+    ctx = await launchApp()
+    electronApp = ctx.app
+    libraryPage = await openLibraryPage(electronApp)
+  })
+
+  test.afterAll(async () => {
+    await closeApp(ctx)
+  })
+
+  test.beforeEach(async () => {
+    await clearDatabase(electronApp)
+    await libraryPage.reload()
+    await libraryPage.waitForSelector('#root', { timeout: 5_000 })
+  })
+
+  test('shows empty state', async () => {
     const heading = libraryPage.locator('h1', { hasText: 'Library' })
     await expect(heading).toBeVisible()
 
@@ -80,22 +108,22 @@ test.describe('Library Window', () => {
     await expect(libraryPage.locator('text=No sessions yet')).toBeVisible()
   })
 
-  test('shows select-a-session placeholder', async ({ libraryPage }) => {
+  test('shows select-a-session placeholder', async () => {
     await expect(libraryPage.locator('text=Select a session to view details')).toBeVisible()
   })
 
-  test('shows session list after seeding', async ({ electronApp, libraryPage }) => {
+  test('shows session list after seeding', async () => {
     await seedSession(electronApp)
     await libraryPage.reload()
-    await libraryPage.waitForSelector('#root', { timeout: 10_000 })
+    await libraryPage.waitForSelector('#root', { timeout: 5_000 })
 
     await expect(libraryPage.locator('span', { hasText: 'Test Recording' }).first()).toBeVisible()
   })
 
-  test('click session shows detail', async ({ electronApp, libraryPage }) => {
+  test('click session shows detail', async () => {
     await seedSession(electronApp)
     await libraryPage.reload()
-    await libraryPage.waitForSelector('#root', { timeout: 10_000 })
+    await libraryPage.waitForSelector('#root', { timeout: 5_000 })
 
     await libraryPage.locator('button', { hasText: 'Test Recording' }).click()
 
@@ -110,10 +138,10 @@ test.describe('Library Window', () => {
     await expect(libraryPage.locator('.flex-1 >> text=45s').first()).toBeVisible()
   })
 
-  test('session detail has Copy and Delete buttons', async ({ electronApp, libraryPage }) => {
+  test('session detail has Copy and Delete buttons', async () => {
     await seedSession(electronApp)
     await libraryPage.reload()
-    await libraryPage.waitForSelector('#root', { timeout: 10_000 })
+    await libraryPage.waitForSelector('#root', { timeout: 5_000 })
 
     await libraryPage.locator('button', { hasText: 'Test Recording' }).click()
 
@@ -121,10 +149,10 @@ test.describe('Library Window', () => {
     await expect(libraryPage.locator('button', { hasText: 'Delete' })).toBeVisible()
   })
 
-  test('delete removes session', async ({ electronApp, libraryPage }) => {
+  test('delete removes session', async () => {
     await seedSession(electronApp)
     await libraryPage.reload()
-    await libraryPage.waitForSelector('#root', { timeout: 10_000 })
+    await libraryPage.waitForSelector('#root', { timeout: 5_000 })
 
     await libraryPage.locator('button', { hasText: 'Test Recording' }).click()
     await libraryPage.locator('button', { hasText: 'Delete' }).click()
@@ -133,10 +161,10 @@ test.describe('Library Window', () => {
     await expect(libraryPage.locator('text=No sessions yet')).toBeVisible()
   })
 
-  test('diagram badge appears when session has diagrams', async ({ electronApp, libraryPage }) => {
+  test('diagram badge appears when session has diagrams', async () => {
     await seedSessionWithDiagram(electronApp)
     await libraryPage.reload()
-    await libraryPage.waitForSelector('#root', { timeout: 10_000 })
+    await libraryPage.waitForSelector('#root', { timeout: 5_000 })
 
     const badge = libraryPage.locator('span.text-blue-600', { hasText: 'diagram' })
     await expect(badge).toBeVisible()

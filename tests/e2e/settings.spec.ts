@@ -1,7 +1,22 @@
-import { test, expect } from './fixtures'
+import { test, expect, type AppContext, launchApp, closeApp, openSettingsPage } from './fixtures'
+import type { ElectronApplication, Page } from '@playwright/test'
 
-test.describe('Settings Window', () => {
-  test('shows General tab by default', async ({ settingsPage }) => {
+test.describe.serial('Settings Window', () => {
+  let ctx: AppContext
+  let electronApp: ElectronApplication
+  let settingsPage: Page
+
+  test.beforeAll(async () => {
+    ctx = await launchApp()
+    electronApp = ctx.app
+    settingsPage = await openSettingsPage(electronApp)
+  })
+
+  test.afterAll(async () => {
+    await closeApp(ctx)
+  })
+
+  test('shows General tab by default', async () => {
     const heading = settingsPage.locator('h2', { hasText: 'General' })
     await expect(heading).toBeVisible()
 
@@ -9,7 +24,7 @@ test.describe('Settings Window', () => {
     await expect(navButtons).toHaveCount(5)
   })
 
-  test('General tab has toggles and language select', async ({ settingsPage }) => {
+  test('General tab has toggles and language select', async () => {
     const switches = settingsPage.locator('button[role="switch"]')
     await expect(switches).toHaveCount(2)
 
@@ -17,7 +32,7 @@ test.describe('Settings Window', () => {
     await expect(languageSelect).toHaveValue('en')
   })
 
-  test('can toggle launch-at-login', async ({ settingsPage }) => {
+  test('can toggle launch-at-login', async () => {
     const switches = settingsPage.locator('button[role="switch"]')
     const launchToggle = switches.first()
 
@@ -28,13 +43,13 @@ test.describe('Settings Window', () => {
     await expect(launchToggle).toHaveAttribute('aria-checked', 'false')
   })
 
-  test('can change language select', async ({ settingsPage }) => {
+  test('can change language select', async () => {
     const languageSelect = settingsPage.locator('select').last()
     await languageSelect.selectOption('es')
     await expect(languageSelect).toHaveValue('es')
   })
 
-  test('navigate to Voice tab', async ({ settingsPage }) => {
+  test('navigate to Voice tab', async () => {
     await settingsPage.locator('nav button', { hasText: 'Voice' }).click()
 
     const heading = settingsPage.locator('h2', { hasText: 'Voice' })
@@ -44,7 +59,7 @@ test.describe('Settings Window', () => {
     await expect(backendLabel).toBeVisible()
   })
 
-  test('Voice tab shows API key for whisper-cloud', async ({ settingsPage }) => {
+  test('Voice tab shows API key for whisper-cloud', async () => {
     await settingsPage.locator('nav button', { hasText: 'Voice' }).click()
 
     const apiKeyInput = settingsPage.locator('input[type="password"]')
@@ -52,7 +67,7 @@ test.describe('Settings Window', () => {
     await expect(apiKeyInput).toHaveAttribute('placeholder', 'sk-...')
   })
 
-  test('Voice tab conditional UI for whisper-local', async ({ settingsPage }) => {
+  test('Voice tab conditional UI for whisper-local', async () => {
     await settingsPage.locator('nav button', { hasText: 'Voice' }).click()
 
     // Select whisper-local backend
@@ -68,7 +83,7 @@ test.describe('Settings Window', () => {
     await expect(selects).toHaveCount(3)
   })
 
-  test('navigate to LLM tab', async ({ settingsPage }) => {
+  test('navigate to LLM tab', async () => {
     await settingsPage.locator('nav button', { hasText: 'LLM' }).click()
 
     const heading = settingsPage.locator('h2', { hasText: 'LLM Post-Processing' })
@@ -78,7 +93,7 @@ test.describe('Settings Window', () => {
     await expect(toggle).toHaveAttribute('aria-checked', 'false')
   })
 
-  test('LLM tab shows options when enabled', async ({ settingsPage }) => {
+  test('LLM tab shows options when enabled', async () => {
     await settingsPage.locator('nav button', { hasText: 'LLM' }).click()
 
     const toggle = settingsPage.locator('button[role="switch"]')
@@ -92,7 +107,7 @@ test.describe('Settings Window', () => {
     await expect(apiKeyInput).toBeVisible()
   })
 
-  test('navigate to Shortcuts tab', async ({ settingsPage }) => {
+  test('navigate to Shortcuts tab', async () => {
     await settingsPage.locator('nav button', { hasText: 'Shortcuts' }).click()
 
     const heading = settingsPage.locator('h2', { hasText: 'Shortcuts' })
@@ -102,7 +117,7 @@ test.describe('Settings Window', () => {
     await expect(inputs).toHaveCount(3)
   })
 
-  test('navigate to About tab', async ({ settingsPage }) => {
+  test('navigate to About tab', async () => {
     await settingsPage.locator('nav button', { hasText: 'About' }).click()
 
     const heading = settingsPage.locator('h2', { hasText: 'About' })
@@ -114,7 +129,10 @@ test.describe('Settings Window', () => {
     ).toBeVisible()
   })
 
-  test('settings persist across tab switches', async ({ settingsPage }) => {
+  test('settings persist across tab switches', async () => {
+    // Navigate to General tab first
+    await settingsPage.locator('nav button', { hasText: 'General' }).click()
+
     // Change language to French
     const languageSelect = settingsPage.locator('select').last()
     await languageSelect.selectOption('fr')
