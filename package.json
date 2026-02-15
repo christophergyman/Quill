@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.0",
+    "@napi-rs/canvas": "^0.1.92",
     "@playwright/test": "^1.49.1",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/jest-dom": "^6.6.3",

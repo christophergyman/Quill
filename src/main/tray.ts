@@ -14,16 +14,22 @@ interface TrayCallbacks {
 let tray: Tray | null = null
 
 export function createTray(callbacks: TrayCallbacks): Tray {
-  const iconPath = join(__dirname, '../../resources/tray-icon.png')
+  const iconPath = join(__dirname, '../../resources/tray-iconTemplate.png')
   const icon = nativeImage.createFromPath(iconPath)
 
-  // Fallback to a small empty icon if resource not found
   const trayIcon = icon.isEmpty()
     ? nativeImage.createEmpty()
     : icon.resize({ width: 18, height: 18 })
 
   tray = new Tray(trayIcon)
   tray.setToolTip('Quill')
+
+  // If icon file was missing, show a text title so the tray is still visible
+  if (icon.isEmpty()) {
+    logger.warn('Tray icon not found at %s, using text fallback', iconPath)
+    tray.setTitle('Q')
+  }
+
   logger.info('Tray created')
 
   const contextMenu = Menu.buildFromTemplate([
