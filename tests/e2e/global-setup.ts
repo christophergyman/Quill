@@ -1,21 +1,16 @@
 import { execSync } from 'child_process'
-import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, mkdirSync, copyFileSync } from 'fs'
 import { resolve } from 'path'
 
-const MARKER_PATH = resolve(__dirname, '../../node_modules/.e2e-rebuild-marker')
+const NATIVE_BINARY = 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+const CACHE_DIR = 'node_modules/.cache/e2e-rebuild'
 
-function getRebuildMarker(root: string): string {
+function getVersionKey(root: string): string {
   const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf-8'))
   const electronVersion = pkg.devDependencies?.electron ?? ''
   const sqliteVersion =
     pkg.dependencies?.['better-sqlite3'] ?? pkg.devDependencies?.['better-sqlite3'] ?? ''
-  return JSON.stringify({
-    electron: electronVersion,
-    'better-sqlite3': sqliteVersion,
-    platform: process.platform,
-    arch: process.arch,
-    target: 'electron'
-  })
+  return `${electronVersion}_${sqliteVersion}_${process.platform}_${process.arch}`
 }
 
 export default function globalSetup() {
@@ -32,26 +27,23 @@ export default function globalSetup() {
     console.log('[global-setup] Build output found, skipping build.')
   }
 
-  // Rebuild better-sqlite3 for Electron's Node version (with caching)
-  const expectedMarker = getRebuildMarker(root)
-  let needsRebuild = forceRebuild
+  // Rebuild better-sqlite3 for Electron (with binary caching)
+  const binaryPath = resolve(root, NATIVE_BINARY)
+  const cacheDir = resolve(root, CACHE_DIR)
+  const versionKey = getVersionKey(root)
+  const cachedElectronBinary = resolve(cacheDir, `electron_${versionKey}.node`)
 
-  if (!needsRebuild) {
-    if (existsSync(MARKER_PATH)) {
-      const existingMarker = readFileSync(MARKER_PATH, 'utf-8')
-      needsRebuild = existingMarker !== expectedMarker
-      if (!needsRebuild) {
-        console.log('[global-setup] electron-rebuild cached, skipping.')
-      }
-    } else {
-      needsRebuild = true
-    }
+  if (!forceRebuild && existsSync(cachedElectronBinary)) {
+    console.log('[global-setup] Restoring cached Electron binary, skipping rebuild.')
+    copyFileSync(cachedElectronBinary, binaryPath)
+    return
   }
 
-  if (needsRebuild) {
-    console.log('[global-setup] Rebuilding better-sqlite3 for Electron...')
-    execSync('npx electron-rebuild -f -w better-sqlite3', { cwd: root, stdio: 'inherit' })
-    writeFileSync(MARKER_PATH, expectedMarker, 'utf-8')
-    console.log('[global-setup] Rebuild complete, marker written.')
-  }
+  console.log('[global-setup] Rebuilding better-sqlite3 for Electron...')
+  execSync('npx electron-rebuild -f -w better-sqlite3', { cwd: root, stdio: 'inherit' })
+
+  // Cache the built binary
+  mkdirSync(cacheDir, { recursive: true })
+  copyFileSync(binaryPath, cachedElectronBinary)
+  console.log('[global-setup] Rebuild complete, binary cached.')
 }
