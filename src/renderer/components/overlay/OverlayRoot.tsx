@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useOverlay } from '../../hooks/useOverlay'
-import { useRecordingStore } from '../../stores/recording'
+import { useRecording } from '../../hooks/useRecording'
 import { useTldraw } from '../../hooks/useTldraw'
 import { TranscriptionPanel } from './TranscriptionPanel'
 import { StatusIndicator } from './StatusIndicator'
@@ -9,7 +9,7 @@ import { DrawingCanvas } from './DrawingCanvas'
 
 export function OverlayRoot() {
   const { mode } = useOverlay()
-  const { state: recordingState, partialText, finalText } = useRecordingStore()
+  const { state: recordingState, partialText, finalText } = useRecording()
   const { setEditor, getSnapshot, exportAsSvg, clear } = useTldraw()
 
   const transcription = finalText || partialText

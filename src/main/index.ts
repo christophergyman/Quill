@@ -24,42 +24,56 @@ let settingsWindow: BrowserWindow | null = null
 let libraryWindow: BrowserWindow | null = null
 let overlayMode: 'passthrough' | 'drawing' = 'passthrough'
 
+if (process.env.QUILL_TEST_USER_DATA) {
+  app.setPath('userData', process.env.QUILL_TEST_USER_DATA)
+}
+
 app.dock?.hide()
 
-app.whenReady().then(() => {
-  logger.info('Quill starting up')
+app
+  .whenReady()
+  .then(() => {
+    logger.info('Quill starting up')
 
-  initDatabase()
+    const db = initDatabase()
 
-  overlayWindow = createOverlayWindow()
+    // Expose database for E2E test seeding
+    if (process.env.QUILL_TEST_USER_DATA) {
+      ;(global as Record<string, unknown>).__quillTestDb = db
+    }
 
-  createTray({
-    onToggleOverlay: () => toggleOverlay(),
-    onOpenSettings: () => {
-      if (!settingsWindow || settingsWindow.isDestroyed()) {
-        settingsWindow = createSettingsWindow()
-      }
-      settingsWindow.show()
-      settingsWindow.focus()
-    },
-    onOpenLibrary: () => {
-      if (!libraryWindow || libraryWindow.isDestroyed()) {
-        libraryWindow = createLibraryWindow()
-      }
-      libraryWindow.show()
-      libraryWindow.focus()
-    },
-    onQuit: () => app.quit()
+    overlayWindow = createOverlayWindow()
+
+    createTray({
+      onToggleOverlay: () => toggleOverlay(),
+      onOpenSettings: () => {
+        if (!settingsWindow || settingsWindow.isDestroyed()) {
+          settingsWindow = createSettingsWindow()
+        }
+        settingsWindow.show()
+        settingsWindow.focus()
+      },
+      onOpenLibrary: () => {
+        if (!libraryWindow || libraryWindow.isDestroyed()) {
+          libraryWindow = createLibraryWindow()
+        }
+        libraryWindow.show()
+        libraryWindow.focus()
+      },
+      onQuit: () => app.quit()
+    })
+
+    registerIpcHandlers()
+    registerShortcuts({
+      onToggleOverlay: () => toggleOverlay(),
+      onToggleDrawing: () => toggleDrawingMode()
+    })
+
+    logger.info('Quill ready')
   })
-
-  registerIpcHandlers()
-  registerShortcuts({
-    onToggleOverlay: () => toggleOverlay(),
-    onToggleDrawing: () => toggleDrawingMode()
+  .catch((err) => {
+    logger.error('Startup failed: %s', err)
   })
-
-  logger.info('Quill ready')
-})
 
 function toggleOverlay() {
   if (!overlayWindow || overlayWindow.isDestroyed()) {

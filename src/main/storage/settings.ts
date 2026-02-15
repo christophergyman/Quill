@@ -6,19 +6,26 @@ import { createLogger } from '../../shared/logger'
 
 const logger = createLogger('settings-store')
 
-const store = new Store<{ settings: AppSettings }>({
-  name: 'quill-settings',
-  defaults: { settings: DEFAULT_SETTINGS }
-})
+let store: Store<{ settings: AppSettings }> | null = null
+
+function getStore(): Store<{ settings: AppSettings }> {
+  if (!store) {
+    store = new Store<{ settings: AppSettings }>({
+      name: 'quill-settings',
+      defaults: { settings: DEFAULT_SETTINGS }
+    })
+  }
+  return store
+}
 
 export function getSettings(): AppSettings {
-  return store.get('settings')
+  return getStore().get('settings')
 }
 
 export function setSettings(partial: Partial<AppSettings>): AppSettings {
   const current = getSettings()
   const updated = mergeSettings(current, partial)
-  store.set('settings', updated)
+  getStore().set('settings', updated)
   logger.debug('Settings updated')
   return updated
 }

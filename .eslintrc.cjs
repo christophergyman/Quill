@@ -18,5 +18,16 @@ module.exports = {
     'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/no-explicit-any': 'warn'
-  }
+  },
+  overrides: [
+    {
+      files: ['tests/e2e/**/*.ts'],
+      rules: {
+        'react-hooks/rules-of-hooks': 'off',
+        '@typescript-eslint/no-require-imports': 'off',
+        '@typescript-eslint/no-explicit-any': 'off',
+        'no-empty-pattern': 'off'
+      }
+    }
+  ]
 }
