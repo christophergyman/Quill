@@ -1,5 +1,8 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
+import { createLogger } from '../../shared/logger'
+
+const logger = createLogger('window-library')
 
 export function createLibraryWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -21,5 +24,6 @@ export function createLibraryWindow(): BrowserWindow {
     win.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/library' })
   }
 
+  logger.info('Library window created')
   return win
 }

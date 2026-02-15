@@ -25,6 +25,7 @@ export function setSettings(partial: Partial<AppSettings>): AppSettings {
 
 export function encryptApiKey(key: string): string {
   if (!key) return ''
+  logger.debug('Encrypting API key')
   if (!safeStorage.isEncryptionAvailable()) {
     throw new Error(
       'Cannot securely store API key — safeStorage encryption is not available on this system'
@@ -35,6 +36,7 @@ export function encryptApiKey(key: string): string {
 
 export function decryptApiKey(encrypted: string): string {
   if (!encrypted) return ''
+  logger.debug('Decrypting API key')
   if (!safeStorage.isEncryptionAvailable()) {
     logger.warn('safeStorage not available, returning key as-is (may be unencrypted)')
     return encrypted

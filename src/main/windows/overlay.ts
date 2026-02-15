@@ -1,5 +1,8 @@
 import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
+import { createLogger } from '../../shared/logger'
+
+const logger = createLogger('window-overlay')
 
 export function createOverlayWindow(): BrowserWindow {
   const primaryDisplay = screen.getPrimaryDisplay()
@@ -32,8 +35,10 @@ export function createOverlayWindow(): BrowserWindow {
 
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    logger.info('Overlay window created (dev URL)')
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'))
+    logger.info('Overlay window created (file)')
   }
 
   return win

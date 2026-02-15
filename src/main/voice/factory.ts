@@ -17,6 +17,7 @@ export async function createVoiceBackend(config: VoiceBackendConfig): Promise<Vo
       backend = new WhisperCloudBackend()
       break
     default:
+      logger.error('Unknown voice backend type: %s', config.type)
       throw new Error(`Unknown voice backend type: ${config.type}`)
   }
 

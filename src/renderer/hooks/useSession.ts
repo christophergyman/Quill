@@ -1,6 +1,9 @@
 import { useCallback } from 'react'
 import { useSessionsStore } from '../stores/sessions'
 import type { SessionListItem, SessionWithDiagrams } from '@shared/types/session'
+import { createRendererLogger } from '../lib/logger'
+
+const logger = createRendererLogger('useSession')
 
 export function useSession() {
   const {
@@ -15,14 +18,17 @@ export function useSession() {
   } = useSessionsStore()
 
   const loadSessions = useCallback(async () => {
+    logger.debug('Loading sessions')
     setLoading(true)
     const list = window.api ? ((await window.api.listSessions()) as SessionListItem[]) : []
+    logger.debug('Loaded %d sessions', list.length)
     setSessions(list)
     setLoading(false)
   }, [setSessions, setLoading])
 
   const loadSession = useCallback(
     async (id: string) => {
+      logger.debug('Loading session: %s', id)
       setLoading(true)
       const session = window.api
         ? ((await window.api.getSession(id)) as SessionWithDiagrams | null)
@@ -34,6 +40,7 @@ export function useSession() {
   )
 
   const deleteSession = useCallback(async (id: string) => {
+    logger.debug('Deleting session: %s', id)
     await window.api?.deleteSession(id)
     // Use store setState to avoid stale closure over sessions/currentSession
     useSessionsStore.setState((state) => ({

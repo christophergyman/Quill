@@ -1,5 +1,8 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
+import { createLogger } from '../../shared/logger'
+
+const logger = createLogger('window-settings')
 
 export function createSettingsWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -22,5 +25,6 @@ export function createSettingsWindow(): BrowserWindow {
     win.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/settings' })
   }
 
+  logger.info('Settings window created')
   return win
 }

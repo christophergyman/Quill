@@ -64,11 +64,18 @@ export function runMigrations(db: Database.Database): void {
     | undefined
   const currentVersion = row?.version ?? 0
 
+  logger.info(
+    'Current schema version: %d, available migrations: %d',
+    currentVersion,
+    MIGRATIONS.length
+  )
+
   for (const migration of MIGRATIONS) {
     if (migration.version > currentVersion) {
       logger.info('Running migration v%d', migration.version)
       db.exec(migration.up)
       db.prepare('INSERT INTO schema_version (version) VALUES (?)').run(migration.version)
+      logger.info('Migration v%d complete', migration.version)
     }
   }
 }

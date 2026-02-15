@@ -2,6 +2,9 @@ import { useEffect, useCallback, useRef } from 'react'
 import { useRecordingStore } from '../stores/recording'
 import type { TranscriptionResult } from '@shared/types/ipc'
 import { AUDIO_SAMPLE_RATE } from '@shared/constants'
+import { createRendererLogger } from '../lib/logger'
+
+const logger = createRendererLogger('useRecording')
 
 export function useRecording() {
   const { state, partialText, finalText, setState, setPartialText, setFinalText, reset } =
@@ -14,6 +17,7 @@ export function useRecording() {
     if (!window.api) return
 
     const cleanupState = window.api.onRecordingStateChanged((newState, sessionId) => {
+      logger.debug('State changed: %s', newState)
       setState(newState as 'idle' | 'recording' | 'processing' | 'complete' | 'error', sessionId)
     })
 
@@ -58,6 +62,7 @@ export function useRecording() {
 
   const startRecording = useCallback(async () => {
     try {
+      logger.info('Starting recording')
       reset()
       setState('recording')
 
@@ -89,15 +94,17 @@ export function useRecording() {
 
       source.connect(worklet)
       worklet.connect(audioContext.destination)
+      logger.debug('Audio pipeline connected')
 
       await window.api?.startRecording()
     } catch (err) {
-      console.error('Failed to start recording:', err)
+      logger.error('Failed to start recording:', err)
       setState('error')
     }
   }, [reset, setState])
 
   const stopRecording = useCallback(async () => {
+    logger.info('Stopping recording')
     // Stop audio capture
     if (workletRef.current) {
       workletRef.current.disconnect()

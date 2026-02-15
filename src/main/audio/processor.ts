@@ -1,4 +1,7 @@
 import { AUDIO_SAMPLE_RATE, AUDIO_CHANNELS } from '../../shared/constants'
+import { createLogger } from '../../shared/logger'
+
+const logger = createLogger('audio-processor')
 
 /**
  * Accumulates PCM Float32 chunks and assembles them into a WAV buffer.
@@ -28,6 +31,7 @@ export class AudioProcessor {
    */
   toWav(): Buffer {
     const totalSamples = this.getTotalSamples()
+    logger.debug('Encoding WAV: %d chunks, %d samples', this.chunks.length, totalSamples)
     const pcm = new Float32Array(totalSamples)
 
     let offset = 0

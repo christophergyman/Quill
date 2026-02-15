@@ -16,6 +16,7 @@ export async function createLLMProcessor(config: LLMProcessorConfig): Promise<LL
       processor = new OllamaLLMProcessor()
       break
     default:
+      logger.error('Unknown LLM backend: %s', config.backend)
       throw new Error(`Unknown LLM backend: ${config.backend}`)
   }
 
