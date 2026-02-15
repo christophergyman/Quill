@@ -45,6 +45,7 @@ bun run test:unit      Unit tests only
 bun run test:watch     Watch mode
 bun run test:e2e       Playwright E2E tests
 
+bun run clean:test-processes  Kill orphaned Vitest/Electron processes
 bun run lint           Lint
 bun run lint:fix       Lint + autofix
 bun run format         Format code
@@ -69,7 +70,9 @@ bun run validate       Run all checks (lint + typecheck + tests)
 - Playwright for E2E (framework ready, tests to be expanded)
 - Mock `window.api` via `tests/setup.ts` for renderer tests
 - Coverage via v8 with text + HTML reporters
-- Pre-commit: lint-staged + unit tests with --bail
+- Pre-commit: cleanup orphaned processes + lint-staged + unit tests with --bail
+- `pretest` hooks auto-kill orphaned Vitest/Electron processes before every test run
+- Vitest uses `pool: 'forks'` with `maxForks: 2` to limit worker memory
 
 ## Troubleshooting & Gotchas
 
@@ -93,6 +96,13 @@ bun run validate       Run all checks (lint + typecheck + tests)
 - **Microphone access:** required for audio recording — macOS will prompt on first use
 - **Screen Recording:** required for overlay window — must be granted in System Settings > Privacy
 - If permissions are denied, the app won't crash but recording/overlay features will silently fail
+
+### Orphaned test processes
+
+- Interrupted test runs (Ctrl+C, terminal closed) can leave Vitest workers and Electron instances behind (~4GB RAM each)
+- `bun run clean:test-processes` finds and kills orphans scoped to this project's path, plus cleans stale `quill-test-*` temp dirs
+- This runs automatically before every `bun run test`, `test:unit`, and `test:e2e` via `pretest` hooks
+- Also runs in the pre-commit hook before lint-staged
 
 ### Common pitfalls
 
@@ -122,3 +132,4 @@ bun run validate       Run all checks (lint + typecheck + tests)
 | Storage | `src/main/storage/database.ts`, `src/main/storage/sessions.ts`                |
 | Types   | `src/shared/types/session.ts`, `src/shared/types/settings.ts`                 |
 | Config  | `electron.vite.config.ts`, `vitest.config.ts`, `playwright.config.ts`         |
+| Scripts | `scripts/ensure-electron-native.mjs`, `scripts/clean-test-processes.mjs`      |
