@@ -5,7 +5,7 @@ import { VoiceTab } from './VoiceTab'
 import { LLMTab } from './LLMTab'
 import { ShortcutsTab } from './ShortcutsTab'
 import { AboutTab } from './AboutTab'
-import { clsx } from 'clsx'
+import { cn } from '../../lib/utils'
 
 const TABS = ['General', 'Voice', 'LLM', 'Shortcuts', 'About'] as const
 type Tab = (typeof TABS)[number]
@@ -16,25 +16,25 @@ export function SettingsRoot() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-neutral-50 text-neutral-400 text-sm">
+      <div className="flex h-screen items-center justify-center bg-background text-muted-foreground text-sm">
         Loading settings...
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen bg-neutral-50">
+    <div className="flex h-screen bg-background">
       {/* Sidebar tabs */}
-      <nav className="w-48 border-r border-neutral-200 p-3 pt-8">
+      <nav className="w-48 border-r border-border p-3 pt-8">
         {TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={clsx(
+            className={cn(
               'w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors mb-0.5',
               activeTab === tab
-                ? 'bg-neutral-200 text-neutral-900 font-medium'
-                : 'text-neutral-600 hover:bg-neutral-100'
+                ? 'bg-accent text-foreground font-medium'
+                : 'text-muted-foreground hover:bg-accent/50'
             )}
           >
             {tab}

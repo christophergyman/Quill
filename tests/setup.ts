@@ -1,6 +1,13 @@
 import '@testing-library/jest-dom/vitest'
 import { DEFAULT_SETTINGS } from '../src/shared/types/settings'
 
+// Mock ResizeObserver for Radix UI portals (not available in jsdom)
+global.ResizeObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 // Mock window.api for renderer tests
 const mockApi = {
   startRecording: vi.fn(),

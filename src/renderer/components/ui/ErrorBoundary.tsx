@@ -1,6 +1,7 @@
 import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { createRendererLogger } from '../../lib/logger'
+import { Button } from './button'
 
 const logger = createRendererLogger('ErrorBoundary')
 
@@ -32,16 +33,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.state.hasError) {
       return (
         this.props.fallback || (
-          <div className="flex h-screen items-center justify-center bg-neutral-50 p-8">
+          <div className="flex h-screen items-center justify-center bg-background p-8">
             <div className="text-center">
-              <h2 className="text-lg font-semibold text-neutral-900 mb-2">Something went wrong</h2>
-              <p className="text-sm text-neutral-500 mb-4">{this.state.error?.message}</p>
-              <button
+              <h2 className="text-lg font-semibold text-foreground mb-2">Something went wrong</h2>
+              <p className="text-sm text-muted-foreground mb-4">{this.state.error?.message}</p>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => this.setState({ hasError: false, error: null })}
-                className="text-sm px-4 py-2 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700"
               >
                 Try again
-              </button>
+              </Button>
             </div>
           </div>
         )

@@ -1,5 +1,6 @@
 import type { ShortcutSettings } from '@shared/types/settings'
-import { Input } from '../ui/Input'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
 
 interface ShortcutsTabProps {
   settings: ShortcutSettings
@@ -9,32 +10,49 @@ interface ShortcutsTabProps {
 export function ShortcutsTab({ settings, onChange }: ShortcutsTabProps) {
   return (
     <div>
-      <h2 className="text-lg font-semibold text-neutral-900 mb-4">Shortcuts</h2>
+      <h2 className="text-lg font-semibold text-foreground mb-4">Shortcuts</h2>
 
       <div className="space-y-4">
-        <Input
-          label="Toggle Overlay"
-          value={settings.toggleOverlay}
-          onChange={(e) => onChange({ ...settings, toggleOverlay: e.target.value })}
-          hint="Show/hide the overlay window"
-        />
+        <div>
+          <Label htmlFor="toggle-overlay" className="text-xs mb-1">
+            Toggle Overlay
+          </Label>
+          <Input
+            id="toggle-overlay"
+            value={settings.toggleOverlay}
+            onChange={(e) => onChange({ ...settings, toggleOverlay: e.target.value })}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">Show/hide the overlay window</p>
+        </div>
 
-        <Input
-          label="Toggle Drawing Mode"
-          value={settings.toggleDrawing}
-          onChange={(e) => onChange({ ...settings, toggleDrawing: e.target.value })}
-          hint="Switch between passthrough and drawing mode"
-        />
+        <div>
+          <Label htmlFor="toggle-drawing" className="text-xs mb-1">
+            Toggle Drawing Mode
+          </Label>
+          <Input
+            id="toggle-drawing"
+            value={settings.toggleDrawing}
+            onChange={(e) => onChange({ ...settings, toggleDrawing: e.target.value })}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Switch between passthrough and drawing mode
+          </p>
+        </div>
 
-        <Input
-          label="Hold to Record"
-          value={settings.holdToRecord}
-          onChange={(e) => onChange({ ...settings, holdToRecord: e.target.value })}
-          hint="Hold this key to record audio"
-        />
+        <div>
+          <Label htmlFor="hold-to-record" className="text-xs mb-1">
+            Hold to Record
+          </Label>
+          <Input
+            id="hold-to-record"
+            value={settings.holdToRecord}
+            onChange={(e) => onChange({ ...settings, holdToRecord: e.target.value })}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">Hold this key to record audio</p>
+        </div>
       </div>
 
-      <p className="mt-6 text-xs text-neutral-400">
+      <p className="mt-6 text-xs text-muted-foreground">
         Use Electron accelerator format: CommandOrControl+Shift+Key
       </p>
     </div>
