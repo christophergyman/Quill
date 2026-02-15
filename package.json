@@ -20,6 +20,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "typecheck": "tsc --noEmit",
     "package": "electron-vite build && electron-builder --mac --config",
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
     "prepare": "husky"
   },
   "dependencies": {
