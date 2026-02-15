@@ -20,21 +20,31 @@ export function useSession() {
   const loadSessions = useCallback(async () => {
     logger.debug('Loading sessions')
     setLoading(true)
-    const list = window.api ? ((await window.api.listSessions()) as SessionListItem[]) : []
-    logger.debug('Loaded %d sessions', list.length)
-    setSessions(list)
-    setLoading(false)
+    try {
+      const list = window.api ? ((await window.api.listSessions()) as SessionListItem[]) : []
+      logger.debug('Loaded %d sessions', list.length)
+      setSessions(list)
+    } catch (err) {
+      logger.error('Failed to load sessions:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [setSessions, setLoading])
 
   const loadSession = useCallback(
     async (id: string) => {
       logger.debug('Loading session: %s', id)
       setLoading(true)
-      const session = window.api
-        ? ((await window.api.getSession(id)) as SessionWithDiagrams | null)
-        : null
-      setCurrentSession(session)
-      setLoading(false)
+      try {
+        const session = window.api
+          ? ((await window.api.getSession(id)) as SessionWithDiagrams | null)
+          : null
+        setCurrentSession(session)
+      } catch (err) {
+        logger.error('Failed to load session %s:', id, err)
+      } finally {
+        setLoading(false)
+      }
     },
     [setCurrentSession, setLoading]
   )

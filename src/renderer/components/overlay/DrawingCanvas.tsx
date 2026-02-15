@@ -1,8 +1,9 @@
 import { lazy, Suspense, useState } from 'react'
+import type { Editor } from 'tldraw'
 
 interface DrawingCanvasProps {
   active: boolean
-  onEditorReady?: (editor: unknown) => void
+  onEditorReady?: (editor: Editor) => void
 }
 
 // Lazy-load tldraw to reduce initial bundle size (~2MB)

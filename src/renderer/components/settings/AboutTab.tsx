@@ -6,7 +6,7 @@ export function AboutTab() {
       <div className="space-y-3">
         <div>
           <span className="text-sm text-neutral-600">Quill</span>
-          <span className="ml-2 text-xs text-neutral-400">v0.1.0</span>
+          <span className="ml-2 text-xs text-neutral-400">v{__APP_VERSION__}</span>
         </div>
 
         <p className="text-sm text-neutral-500 leading-relaxed">

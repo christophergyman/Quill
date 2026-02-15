@@ -6,6 +6,7 @@ import {
   buildSummaryPrompt
 } from './prompts'
 import { createLogger } from '../../shared/logger'
+import { OPENAI_CHAT_TIMEOUT_MS } from '../../shared/constants'
 
 const logger = createLogger('llm-openai')
 
@@ -48,19 +49,27 @@ export class OpenAILLMProcessor implements LLMProcessor {
         temperature: 0.3,
         max_tokens: 2048
       }),
-      signal: AbortSignal.timeout(30_000)
+      signal: AbortSignal.timeout(OPENAI_CHAT_TIMEOUT_MS)
     })
 
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(`OpenAI API authentication failed (${response.status})`)
+      }
       const errorText = await response.text()
       throw new Error(`OpenAI API error (${response.status}): ${errorText}`)
     }
 
     const result = (await response.json()) as {
-      choices: Array<{ message: { content: string } }>
+      choices?: Array<{ message?: { content?: string } }>
     }
 
-    return result.choices[0]?.message?.content?.trim() || ''
+    const content = result.choices?.[0]?.message?.content?.trim()
+    if (content === undefined || content === null) {
+      throw new Error('OpenAI API returned an unexpected response shape — no content in choices')
+    }
+
+    return content || ''
   }
 
   dispose(): void {

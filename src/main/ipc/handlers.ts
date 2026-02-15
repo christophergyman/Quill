@@ -4,6 +4,7 @@ import { AudioProcessor } from '../audio/processor'
 import { createVoiceBackend } from '../voice/factory'
 import { createLLMProcessor } from '../llm/factory'
 import { createLogger } from '../../shared/logger'
+import { MAX_CLIPBOARD_LENGTH, MAX_AUDIO_CHUNK_SAMPLES } from '../../shared/constants'
 import type { VoiceBackend } from '../voice/backend'
 import type { LLMProcessor } from '../llm/processor'
 import type { AppSettings } from '../../shared/types/settings'
@@ -22,6 +23,12 @@ import {
 
 const logger = createLogger('ipc')
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function isValidUUID(id: unknown): id is string {
+  return typeof id === 'string' && UUID_REGEX.test(id)
+}
+
 let audioProcessor: AudioProcessor | null = null
 let isRecording = false
 let isProcessing = false
@@ -29,6 +36,12 @@ let isProcessing = false
 export function registerIpcHandlers() {
   // --- Clipboard ---
   ipcMain.handle(IpcChannel.CLIPBOARD_WRITE, (_event, text: string) => {
+    if (typeof text !== 'string') {
+      throw new Error('CLIPBOARD_WRITE: text must be a string')
+    }
+    if (text.length > MAX_CLIPBOARD_LENGTH) {
+      throw new Error('CLIPBOARD_WRITE: text exceeds maximum length')
+    }
     clipboard.writeText(text)
     logger.debug('Text written to clipboard')
   })
@@ -82,14 +95,27 @@ export function registerIpcHandlers() {
       emitRecordingStateChanged(win, 'processing')
     }
 
+    let voiceBackend: VoiceBackend | null = null
+    let llmProcessor: LLMProcessor | null = null
+
     try {
-      const wavBuffer = processor.toWav()
+      let wavBuffer: Buffer
+      try {
+        wavBuffer = processor.toWav()
+      } catch (err) {
+        logger.error('Failed to convert audio to WAV: %s', err)
+        if (win) {
+          emitTranscriptionError(win, 'Failed to process recorded audio')
+          emitRecordingStateChanged(win, 'error')
+        }
+        isProcessing = false
+        return null
+      }
 
       // Load user settings
       const settings: AppSettings = getSettings()
 
       // Transcribe
-      let voiceBackend: VoiceBackend | null = null
       try {
         voiceBackend = await createVoiceBackend({
           type: settings.voice.backend,
@@ -107,15 +133,19 @@ export function registerIpcHandlers() {
         return null
       }
 
-      const transcription = await voiceBackend.transcribe(wavBuffer, settings.voice.language)
-      voiceBackend.dispose()
+      let transcription
+      try {
+        transcription = await voiceBackend.transcribe(wavBuffer, settings.voice.language)
+      } finally {
+        voiceBackend.dispose()
+        voiceBackend = null
+      }
 
       let cleanedText = transcription.text
       let summary: string | undefined
 
       // LLM cleanup if enabled
       if (settings.llm.enabled) {
-        let llmProcessor: LLMProcessor | null = null
         try {
           llmProcessor = await createLLMProcessor({
             backend: settings.llm.backend,
@@ -129,10 +159,11 @@ export function registerIpcHandlers() {
           const result = await llmProcessor.cleanup(transcription.text)
           cleanedText = result.cleanedText
           summary = result.summary
-          llmProcessor.dispose()
         } catch (err) {
           logger.warn('LLM cleanup failed, using raw text: %s', err)
+        } finally {
           llmProcessor?.dispose()
+          llmProcessor = null
         }
       }
 
@@ -181,7 +212,13 @@ export function registerIpcHandlers() {
     IpcChannel.AUDIO_SEND_CHUNK,
     (_event, samples: Float32Array, _sampleRate: number) => {
       if (isRecording && audioProcessor) {
+        if (samples && samples.length > MAX_AUDIO_CHUNK_SAMPLES) {
+          logger.warn('Audio chunk too large (%d samples), dropping', samples.length)
+          return
+        }
         audioProcessor.addChunk(new Float32Array(samples))
+      } else {
+        logger.debug('Audio chunk dropped (not recording)')
       }
     }
   )
@@ -193,6 +230,9 @@ export function registerIpcHandlers() {
   })
 
   ipcMain.handle(IpcChannel.SETTINGS_SET, (_event, settings: Partial<AppSettings>) => {
+    if (!settings || typeof settings !== 'object') {
+      throw new Error('SETTINGS_SET: settings must be an object')
+    }
     logger.debug('Settings set requested')
     return setSettings(settings)
   })
@@ -204,17 +244,26 @@ export function registerIpcHandlers() {
   })
 
   ipcMain.handle(IpcChannel.SESSION_GET, (_event, id: string) => {
+    if (!isValidUUID(id)) {
+      throw new Error('SESSION_GET: invalid session ID')
+    }
     logger.debug('Session get requested: %s', id)
     return getSessionWithDiagrams(id)
   })
 
   ipcMain.handle(IpcChannel.SESSION_DELETE, (_event, id: string) => {
+    if (!isValidUUID(id)) {
+      throw new Error('SESSION_DELETE: invalid session ID')
+    }
     logger.debug('Session delete requested: %s', id)
     deleteSession(id)
   })
 
   // --- Session export ---
   ipcMain.handle(IpcChannel.SESSION_EXPORT, (_event, id: string, format: string) => {
+    if (!isValidUUID(id)) {
+      throw new Error('SESSION_EXPORT: invalid session ID')
+    }
     logger.debug('Session export requested: %s (%s)', id, format)
     const session = getSessionWithDiagrams(id)
     if (!session) return null
@@ -240,7 +289,7 @@ export function registerIpcHandlers() {
     IpcChannel.DIAGRAM_EXPORT,
     (_event, sessionId: string, format: string, _data: string) => {
       logger.debug('Diagram export requested: session=%s format=%s', sessionId, format)
-      // TODO: save diagram data via saveDiagram() when tldraw export pipeline is complete
+      throw new Error('Diagram export is not yet implemented')
     }
   )
 

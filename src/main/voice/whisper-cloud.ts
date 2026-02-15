@@ -1,6 +1,7 @@
 import type { VoiceBackend } from './backend'
 import type { TranscriptionOutput, VoiceBackendConfig } from '../../shared/types/voice'
 import { createLogger } from '../../shared/logger'
+import { WHISPER_API_TIMEOUT_MS } from '../../shared/constants'
 
 const logger = createLogger('whisper-cloud')
 
@@ -35,10 +36,13 @@ export class WhisperCloudBackend implements VoiceBackend {
         Authorization: `Bearer ${this.apiKey}`
       },
       body: formData,
-      signal: AbortSignal.timeout(60_000)
+      signal: AbortSignal.timeout(WHISPER_API_TIMEOUT_MS)
     })
 
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(`OpenAI Whisper API authentication failed (${response.status})`)
+      }
       const errorText = await response.text()
       throw new Error(`OpenAI Whisper API error (${response.status}): ${errorText}`)
     }

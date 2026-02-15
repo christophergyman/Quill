@@ -1,9 +1,19 @@
+import { useMemo } from 'react'
 import type { SessionWithDiagrams } from '@shared/types/session'
 import { copyToClipboard } from '../../lib/clipboard'
 
 interface SessionDetailProps {
   session: SessionWithDiagrams
   onDelete: (id: string) => void
+}
+
+function toBase64(data: ArrayBufferLike): string {
+  const bytes = new Uint8Array(data)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return btoa(binary)
 }
 
 export function SessionDetail({ session, onDelete }: SessionDetailProps) {
@@ -13,6 +23,17 @@ export function SessionDetail({ session, onDelete }: SessionDetailProps) {
   const handleCopy = () => {
     copyToClipboard(session.cleanedText || session.rawText)
   }
+
+  const diagramUrls = useMemo(
+    () =>
+      session.diagrams.map((d) => {
+        if (!d.pngData) return null
+        const b64 =
+          typeof d.pngData === 'string' ? d.pngData : toBase64(d.pngData as ArrayBufferLike)
+        return `data:image/png;base64,${b64}`
+      }),
+    [session.diagrams]
+  )
 
   return (
     <div className="p-6 max-w-3xl">
@@ -83,17 +104,13 @@ export function SessionDetail({ session, onDelete }: SessionDetailProps) {
         <div>
           <h3 className="text-xs font-medium text-neutral-500 uppercase mb-2">Diagrams</h3>
           <div className="grid grid-cols-2 gap-3">
-            {session.diagrams.map((diagram) => (
+            {session.diagrams.map((diagram, index) => (
               <div
                 key={diagram.id}
                 className="bg-white rounded-lg border border-neutral-200 p-3 text-xs text-neutral-400"
               >
-                {diagram.pngData ? (
-                  <img
-                    src={`data:image/png;base64,${typeof diagram.pngData === 'string' ? diagram.pngData : btoa(String.fromCharCode(...new Uint8Array(diagram.pngData as ArrayBufferLike)))}`}
-                    alt="Diagram"
-                    className="w-full rounded"
-                  />
+                {diagramUrls[index] ? (
+                  <img src={diagramUrls[index]} alt="Diagram" className="w-full rounded" />
                 ) : (
                   <span>Diagram snapshot saved</span>
                 )}

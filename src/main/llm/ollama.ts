@@ -6,6 +6,7 @@ import {
   buildSummaryPrompt
 } from './prompts'
 import { createLogger } from '../../shared/logger'
+import { OLLAMA_CHAT_TIMEOUT_MS } from '../../shared/constants'
 
 const logger = createLogger('llm-ollama')
 
@@ -42,7 +43,7 @@ export class OllamaLLMProcessor implements LLMProcessor {
         stream: false,
         options: { temperature: 0.3 }
       }),
-      signal: AbortSignal.timeout(120_000)
+      signal: AbortSignal.timeout(OLLAMA_CHAT_TIMEOUT_MS)
     })
 
     if (!response.ok) {
@@ -51,10 +52,15 @@ export class OllamaLLMProcessor implements LLMProcessor {
     }
 
     const result = (await response.json()) as {
-      message: { content: string }
+      message?: { content?: string }
     }
 
-    return result.message?.content?.trim() || ''
+    const content = result.message?.content?.trim()
+    if (content === undefined || content === null) {
+      throw new Error('Ollama API returned an unexpected response shape — no content in message')
+    }
+
+    return content || ''
   }
 
   dispose(): void {

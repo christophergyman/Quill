@@ -42,32 +42,49 @@ app
       ;(global as Record<string, unknown>).__quillTestDb = db
     }
 
-    overlayWindow = createOverlayWindow()
+    try {
+      overlayWindow = createOverlayWindow()
+    } catch (err) {
+      logger.error('Failed to create overlay window: %s', err)
+    }
 
-    createTray({
-      onToggleOverlay: () => toggleOverlay(),
-      onOpenSettings: () => {
-        if (!settingsWindow || settingsWindow.isDestroyed()) {
-          settingsWindow = createSettingsWindow()
-        }
-        settingsWindow.show()
-        settingsWindow.focus()
-      },
-      onOpenLibrary: () => {
-        if (!libraryWindow || libraryWindow.isDestroyed()) {
-          libraryWindow = createLibraryWindow()
-        }
-        libraryWindow.show()
-        libraryWindow.focus()
-      },
-      onQuit: () => app.quit()
-    })
+    try {
+      createTray({
+        onToggleOverlay: () => toggleOverlay(),
+        onOpenSettings: () => {
+          if (!settingsWindow || settingsWindow.isDestroyed()) {
+            settingsWindow = createSettingsWindow()
+          }
+          settingsWindow.show()
+          settingsWindow.focus()
+        },
+        onOpenLibrary: () => {
+          if (!libraryWindow || libraryWindow.isDestroyed()) {
+            libraryWindow = createLibraryWindow()
+          }
+          libraryWindow.show()
+          libraryWindow.focus()
+        },
+        onQuit: () => app.quit()
+      })
+    } catch (err) {
+      logger.error('Failed to create system tray: %s', err)
+    }
 
-    registerIpcHandlers()
-    registerShortcuts({
-      onToggleOverlay: () => toggleOverlay(),
-      onToggleDrawing: () => toggleDrawingMode()
-    })
+    try {
+      registerIpcHandlers()
+    } catch (err) {
+      logger.error('Failed to register IPC handlers: %s', err)
+    }
+
+    try {
+      registerShortcuts({
+        onToggleOverlay: () => toggleOverlay(),
+        onToggleDrawing: () => toggleDrawingMode()
+      })
+    } catch (err) {
+      logger.error('Failed to register shortcuts: %s', err)
+    }
 
     logger.info('Quill ready')
   })

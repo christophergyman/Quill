@@ -212,20 +212,35 @@ describe('IPC Handlers', () => {
 
   describe('SESSION_DELETE', () => {
     it('calls deleteSession from storage', () => {
-      handlers[IpcChannel.SESSION_DELETE]({}, 'test-id')
-      expect(deleteSession).toHaveBeenCalledWith('test-id')
+      const id = '00000000-0000-0000-0000-000000000001'
+      handlers[IpcChannel.SESSION_DELETE]({}, id)
+      expect(deleteSession).toHaveBeenCalledWith(id)
+    })
+
+    it('rejects invalid session ID', () => {
+      expect(() => handlers[IpcChannel.SESSION_DELETE]({}, 'bad-id')).toThrow(
+        'SESSION_DELETE: invalid session ID'
+      )
     })
   })
 
   describe('SESSION_EXPORT', () => {
+    const validId = '00000000-0000-0000-0000-000000000002'
+
     it('returns null for nonexistent session', () => {
-      const result = handlers[IpcChannel.SESSION_EXPORT]({}, 'nonexistent', 'text')
+      const result = handlers[IpcChannel.SESSION_EXPORT]({}, validId, 'text')
       expect(result).toBeNull()
+    })
+
+    it('rejects invalid session ID', () => {
+      expect(() => handlers[IpcChannel.SESSION_EXPORT]({}, 'bad-id', 'text')).toThrow(
+        'SESSION_EXPORT: invalid session ID'
+      )
     })
 
     it('returns JSON string for json format', () => {
       const mockSession = {
-        id: 's-1',
+        id: validId,
         createdAt: '2025-01-01',
         updatedAt: '2025-01-01',
         title: 'Test',
@@ -241,16 +256,16 @@ describe('IPC Handlers', () => {
       }
       ;(getSessionWithDiagrams as ReturnType<typeof vi.fn>).mockReturnValue(mockSession)
 
-      const result = handlers[IpcChannel.SESSION_EXPORT]({}, 's-1', 'json')
+      const result = handlers[IpcChannel.SESSION_EXPORT]({}, validId, 'json')
       expect(typeof result).toBe('string')
       const parsed = JSON.parse(result as string)
-      expect(parsed.id).toBe('s-1')
+      expect(parsed.id).toBe(validId)
       expect(parsed.rawText).toBe('Hello')
     })
 
     it('returns formatted text for text format', () => {
       const mockSession = {
-        id: 's-1',
+        id: validId,
         createdAt: '2025-01-01',
         updatedAt: '2025-01-01',
         title: 'My Session',
@@ -266,7 +281,7 @@ describe('IPC Handlers', () => {
       }
       ;(getSessionWithDiagrams as ReturnType<typeof vi.fn>).mockReturnValue(mockSession)
 
-      const result = handlers[IpcChannel.SESSION_EXPORT]({}, 's-1', 'text') as string
+      const result = handlers[IpcChannel.SESSION_EXPORT]({}, validId, 'text') as string
       expect(result).toContain('My Session')
       expect(result).toContain('Summary')
       expect(result).toContain('A greeting')

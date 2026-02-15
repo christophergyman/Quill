@@ -113,18 +113,16 @@ describe('decryptApiKey', () => {
     expect(result).toBe('decrypted-key')
   })
 
-  it('returns input on failure (graceful fallback)', () => {
+  it('throws on decryption failure', () => {
     mockDecryptString.mockImplementation(() => {
       throw new Error('decrypt failed')
     })
-    const input = 'some-bad-data'
-    const result = decryptApiKey(input)
-    expect(result).toBe(input)
+    expect(() => decryptApiKey('some-bad-data')).toThrow('Failed to decrypt API key')
   })
 
-  it('returns key as-is when safeStorage not available', () => {
+  it('returns empty string when safeStorage not available', () => {
     mockIsEncryptionAvailable.mockReturnValue(false)
     const result = decryptApiKey('some-key')
-    expect(result).toBe('some-key')
+    expect(result).toBe('')
   })
 })

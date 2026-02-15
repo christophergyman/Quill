@@ -26,10 +26,21 @@ export function initDatabase(dbPath?: string): Database.Database {
   logger.info('Opening database at: %s', fullPath)
 
   db = new Database(fullPath)
-  db.pragma('journal_mode = WAL')
-  db.pragma('foreign_keys = ON')
 
-  runMigrations(db)
+  try {
+    db.pragma('journal_mode = WAL')
+    db.pragma('foreign_keys = ON')
+    runMigrations(db)
+  } catch (err) {
+    logger.error('Database initialization failed: %s', err)
+    try {
+      db.close()
+    } catch {
+      // ignore close errors during cleanup
+    }
+    db = null
+    throw err
+  }
 
   logger.info('Database initialized')
   return db

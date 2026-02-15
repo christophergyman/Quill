@@ -1,6 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IpcChannel } from '../shared/types/ipc'
 import type { AppSettings } from '../shared/types/settings'
+import {
+  MAX_CLIPBOARD_LENGTH,
+  MAX_AUDIO_CHUNK_SAMPLES,
+  MAX_DIAGRAM_DATA_LENGTH
+} from '../shared/constants'
 
 const api = {
   // Recording
@@ -8,8 +13,10 @@ const api = {
   stopRecording: () => ipcRenderer.invoke(IpcChannel.RECORDING_STOP),
 
   // Audio
-  sendAudioChunk: (samples: Float32Array, sampleRate: number) =>
-    ipcRenderer.invoke(IpcChannel.AUDIO_SEND_CHUNK, samples, sampleRate),
+  sendAudioChunk: (samples: Float32Array, sampleRate: number) => {
+    if (samples && samples.length > MAX_AUDIO_CHUNK_SAMPLES) return
+    return ipcRenderer.invoke(IpcChannel.AUDIO_SEND_CHUNK, samples, sampleRate)
+  },
 
   // Settings
   getSettings: () => ipcRenderer.invoke(IpcChannel.SETTINGS_GET) as Promise<AppSettings | null>,
@@ -28,11 +35,16 @@ const api = {
     ipcRenderer.invoke(IpcChannel.OVERLAY_SET_MODE, mode),
 
   // Clipboard
-  writeClipboard: (text: string) => ipcRenderer.invoke(IpcChannel.CLIPBOARD_WRITE, text),
+  writeClipboard: (text: string) => {
+    if (typeof text !== 'string' || text.length > MAX_CLIPBOARD_LENGTH) return
+    return ipcRenderer.invoke(IpcChannel.CLIPBOARD_WRITE, text)
+  },
 
   // Diagram
-  exportDiagram: (sessionId: string, format: 'png' | 'svg', data: string) =>
-    ipcRenderer.invoke(IpcChannel.DIAGRAM_EXPORT, sessionId, format, data),
+  exportDiagram: (sessionId: string, format: 'png' | 'svg', data: string) => {
+    if (typeof data === 'string' && data.length > MAX_DIAGRAM_DATA_LENGTH) return
+    return ipcRenderer.invoke(IpcChannel.DIAGRAM_EXPORT, sessionId, format, data)
+  },
 
   // Event listeners (Main → Renderer)
   onRecordingStateChanged: (callback: (state: string, sessionId?: string) => void) => {

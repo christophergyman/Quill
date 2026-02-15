@@ -6,6 +6,13 @@ import { createRendererLogger } from '../lib/logger'
 
 const logger = createRendererLogger('useRecording')
 
+type RecordingState = 'idle' | 'recording' | 'processing' | 'complete' | 'error'
+const VALID_STATES = new Set<string>(['idle', 'recording', 'processing', 'complete', 'error'])
+
+function isValidRecordingState(value: unknown): value is RecordingState {
+  return typeof value === 'string' && VALID_STATES.has(value)
+}
+
 export function useRecording() {
   const { state, partialText, finalText, setState, setPartialText, setFinalText, reset } =
     useRecordingStore()
@@ -18,7 +25,12 @@ export function useRecording() {
 
     const cleanupState = window.api.onRecordingStateChanged((newState, sessionId) => {
       logger.debug('State changed: %s', newState)
-      setState(newState as 'idle' | 'recording' | 'processing' | 'complete' | 'error', sessionId)
+      if (isValidRecordingState(newState)) {
+        setState(newState, sessionId)
+      } else {
+        logger.error('Received unknown recording state: %s', newState)
+        setState('error')
+      }
     })
 
     const cleanupPartial = window.api.onTranscriptionPartial((text) => {

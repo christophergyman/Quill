@@ -45,15 +45,14 @@ export function decryptApiKey(encrypted: string): string {
   if (!encrypted) return ''
   logger.debug('Decrypting API key')
   if (!safeStorage.isEncryptionAvailable()) {
-    logger.warn('safeStorage not available, returning key as-is (may be unencrypted)')
-    return encrypted
+    logger.error('safeStorage not available — cannot decrypt API key')
+    return ''
   }
   try {
     return safeStorage.decryptString(Buffer.from(encrypted, 'base64'))
-  } catch {
-    // Key may have been stored before encryption was available
-    logger.warn('Failed to decrypt API key, returning as-is')
-    return encrypted
+  } catch (err) {
+    logger.error('Failed to decrypt API key: %s', err)
+    throw new Error('Failed to decrypt API key — it may be corrupted. Please re-enter the key.')
   }
 }
 

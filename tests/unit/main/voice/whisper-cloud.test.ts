@@ -52,10 +52,23 @@ describe('WhisperCloudBackend', () => {
     expect(result.segments).toHaveLength(1)
   })
 
-  it('throws on API error', async () => {
+  it('throws on auth error', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('Unauthorized', { status: 401 }))
 
     const wavBuffer = Buffer.alloc(100)
-    await expect(backend.transcribe(wavBuffer)).rejects.toThrow('OpenAI Whisper API error (401)')
+    await expect(backend.transcribe(wavBuffer)).rejects.toThrow(
+      'OpenAI Whisper API authentication failed (401)'
+    )
+  })
+
+  it('throws on non-auth API error with body', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('Rate limit exceeded', { status: 429 })
+    )
+
+    const wavBuffer = Buffer.alloc(100)
+    await expect(backend.transcribe(wavBuffer)).rejects.toThrow(
+      'OpenAI Whisper API error (429): Rate limit exceeded'
+    )
   })
 })

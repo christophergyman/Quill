@@ -1,21 +1,32 @@
+import { createRendererLogger } from '../../lib/logger'
+
+const logger = createRendererLogger('Toolbar')
+
 interface ToolbarProps {
+  sessionId?: string
   onExportSvg?: () => Promise<string | null>
   onGetSnapshot?: () => string | null
   onClear?: () => void
 }
 
-export function Toolbar({ onExportSvg, onGetSnapshot, onClear }: ToolbarProps) {
+export function Toolbar({ sessionId, onExportSvg, onGetSnapshot, onClear }: ToolbarProps) {
   const handleExport = async () => {
     const svg = await onExportSvg?.()
     if (svg) {
-      await window.api?.exportDiagram('', 'svg', svg)
+      if (!sessionId) {
+        logger.warn('No session ID for diagram export')
+      }
+      await window.api?.exportDiagram(sessionId || '', 'svg', svg)
     }
   }
 
   const handleSave = () => {
     const snapshot = onGetSnapshot?.()
     if (snapshot) {
-      window.api?.exportDiagram('', 'svg', snapshot)
+      if (!sessionId) {
+        logger.warn('No session ID for diagram save')
+      }
+      window.api?.exportDiagram(sessionId || '', 'svg', snapshot)
     }
   }
 
