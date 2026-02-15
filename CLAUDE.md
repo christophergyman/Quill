@@ -50,6 +50,7 @@ bun run lint:fix       Lint + autofix
 bun run format         Format code
 bun run format:check   Check formatting
 bun run typecheck      Type check
+bun run validate       Run all checks (lint + typecheck + tests)
 ```
 
 ## Code Conventions
@@ -72,10 +73,9 @@ bun run typecheck      Type check
 
 ## Pre-Commit Workflow
 
-1. Run `bun run test` — verify no regressions
-2. Run `bun run lint` — check for issues
-3. Run `bun run dev` and visually verify UI works via Playwright
-4. Only then commit
+1. Run `bun run validate` — runs lint, typecheck, and all tests
+2. Run `bun run dev` and visually verify UI works via Playwright
+3. Only then commit
 
 ## Key Files
 
