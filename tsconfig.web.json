@@ -14,11 +14,12 @@
     "resolveJsonModule": true,
     "declaration": true,
     "jsx": "react-jsx",
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/renderer/*"],
+      "@shared/*": ["src/shared/*"]
+    }
   },
-  "include": [
-    "src/renderer/**/*",
-    "src/shared/**/*",
-    "src/preload/index.d.ts"
-  ]
+  "include": ["src/renderer/**/*", "src/shared/**/*", "src/preload/index.d.ts"]
 }

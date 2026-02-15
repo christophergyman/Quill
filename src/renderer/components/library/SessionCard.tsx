@@ -1,4 +1,5 @@
-import { clsx } from 'clsx'
+import { cn } from '../../lib/utils'
+import { Badge } from '../ui/badge'
 import type { SessionListItem } from '@shared/types/session'
 
 interface SessionCardProps {
@@ -17,22 +18,22 @@ export function SessionCard({ session, selected, onClick }: SessionCardProps) {
   return (
     <button
       onClick={onClick}
-      className={clsx(
-        'w-full text-left px-4 py-3 border-b border-neutral-100 transition-colors',
-        selected ? 'bg-blue-50' : 'hover:bg-neutral-100'
+      className={cn(
+        'w-full text-left px-4 py-3 border-b border-border transition-colors',
+        selected ? 'bg-accent' : 'hover:bg-accent/50'
       )}
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-medium text-neutral-900">
+        <span className="text-xs font-medium text-foreground">
           {session.title || `${dateStr} ${timeStr}`}
         </span>
-        <span className="text-xs text-neutral-400">{durationSec}s</span>
+        <span className="text-xs text-muted-foreground">{durationSec}s</span>
       </div>
-      <p className="text-xs text-neutral-500 leading-relaxed line-clamp-2">{preview}</p>
+      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{preview}</p>
       {session.hasDiagram && (
-        <span className="inline-block mt-1 text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+        <Badge variant="secondary" className="mt-1 text-[10px]">
           diagram
-        </span>
+        </Badge>
       )}
     </button>
   )

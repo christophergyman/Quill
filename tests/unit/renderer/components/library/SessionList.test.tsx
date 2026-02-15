@@ -34,9 +34,10 @@ describe('SessionList', () => {
     expect(screen.getByText(/No sessions yet/)).toBeInTheDocument()
   })
 
-  it('shows loading state', () => {
-    render(<SessionList sessions={[]} loading={true} onSelect={vi.fn()} />)
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
+  it('shows loading skeletons', () => {
+    const { container } = render(<SessionList sessions={[]} loading={true} onSelect={vi.fn()} />)
+    const skeletons = container.querySelectorAll('[data-slot="skeleton"]')
+    expect(skeletons.length).toBeGreaterThan(0)
   })
 
   it('clicking a session card calls onSelect', () => {
@@ -50,9 +51,8 @@ describe('SessionList', () => {
     render(
       <SessionList sessions={mockSessions} loading={false} selectedId="s-1" onSelect={vi.fn()} />
     )
-    // The selected card should have bg-blue-50 class
     const button = screen.getByText('First Session').closest('button')
-    expect(button?.className).toContain('bg-blue-50')
+    expect(button?.className).toContain('bg-accent')
   })
 
   it('shows diagram badge when session has diagram', () => {

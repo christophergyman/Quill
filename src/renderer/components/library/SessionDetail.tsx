@@ -1,6 +1,19 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { SessionWithDiagrams } from '@shared/types/session'
 import { copyToClipboard } from '../../lib/clipboard'
+import { Button } from '../ui/button'
+import { Card, CardContent } from '../ui/card'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '../ui/alert-dialog'
 
 interface SessionDetailProps {
   session: SessionWithDiagrams
@@ -19,6 +32,7 @@ function toBase64(data: ArrayBufferLike): string {
 export function SessionDetail({ session, onDelete }: SessionDetailProps) {
   const date = new Date(session.createdAt)
   const durationSec = Math.round(session.durationMs / 1000)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const handleCopy = () => {
     copyToClipboard(session.cleanedText || session.rawText)
@@ -40,10 +54,10 @@ export function SessionDetail({ session, onDelete }: SessionDetailProps) {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-neutral-900">
+          <h2 className="text-xl font-semibold text-foreground">
             {session.title || date.toLocaleString()}
           </h2>
-          <div className="flex items-center gap-3 mt-1 text-xs text-neutral-400">
+          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
             <span>{date.toLocaleString()}</span>
             <span>{durationSec}s</span>
             <span>{session.voiceBackend}</span>
@@ -51,70 +65,88 @@ export function SessionDetail({ session, onDelete }: SessionDetailProps) {
           </div>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={handleCopy}
-            className="text-xs px-3 py-1.5 rounded-md bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition-colors"
-          >
+          <Button variant="outline" size="sm" onClick={handleCopy}>
             Copy
-          </button>
-          <button
-            onClick={() => onDelete(session.id)}
-            className="text-xs px-3 py-1.5 rounded-md bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
-          >
-            Delete
-          </button>
+          </Button>
+          <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete session?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete this session and all
+                  associated diagrams.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction variant="destructive" onClick={() => onDelete(session.id)}>
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
       {/* Summary */}
       {session.summary && (
         <div className="mb-6">
-          <h3 className="text-xs font-medium text-neutral-500 uppercase mb-2">Summary</h3>
-          <p className="text-sm text-neutral-700 leading-relaxed">{session.summary}</p>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase mb-2">Summary</h3>
+          <p className="text-sm text-foreground leading-relaxed">{session.summary}</p>
         </div>
       )}
 
       {/* Cleaned text */}
       {session.cleanedText && (
         <div className="mb-6">
-          <h3 className="text-xs font-medium text-neutral-500 uppercase mb-2">Cleaned</h3>
-          <div className="bg-white rounded-lg border border-neutral-200 p-4">
-            <p className="text-sm text-neutral-800 leading-relaxed whitespace-pre-wrap">
-              {session.cleanedText}
-            </p>
-          </div>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase mb-2">Cleaned</h3>
+          <Card className="py-0">
+            <CardContent className="p-4">
+              <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                {session.cleanedText}
+              </p>
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {/* Raw text */}
       <div className="mb-6">
-        <h3 className="text-xs font-medium text-neutral-500 uppercase mb-2">Raw Transcription</h3>
-        <div className="bg-neutral-100 rounded-lg border border-neutral-200 p-4">
-          <p
-            className="text-sm text-neutral-600 leading-relaxed whitespace-pre-wrap"
-            style={{ fontFamily: 'var(--font-mono)' }}
-          >
-            {session.rawText}
-          </p>
-        </div>
+        <h3 className="text-xs font-medium text-muted-foreground uppercase mb-2">
+          Raw Transcription
+        </h3>
+        <Card className="bg-muted py-0">
+          <CardContent className="p-4">
+            <p
+              className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap"
+              style={{ fontFamily: 'var(--font-mono)' }}
+            >
+              {session.rawText}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Diagrams */}
       {session.diagrams.length > 0 && (
         <div>
-          <h3 className="text-xs font-medium text-neutral-500 uppercase mb-2">Diagrams</h3>
+          <h3 className="text-xs font-medium text-muted-foreground uppercase mb-2">Diagrams</h3>
           <div className="grid grid-cols-2 gap-3">
             {session.diagrams.map((diagram, index) => (
-              <div
-                key={diagram.id}
-                className="bg-white rounded-lg border border-neutral-200 p-3 text-xs text-neutral-400"
-              >
-                {diagramUrls[index] ? (
-                  <img src={diagramUrls[index]} alt="Diagram" className="w-full rounded" />
-                ) : (
-                  <span>Diagram snapshot saved</span>
-                )}
-              </div>
+              <Card key={diagram.id} className="py-0">
+                <CardContent className="p-3 text-xs text-muted-foreground">
+                  {diagramUrls[index] ? (
+                    <img src={diagramUrls[index]} alt="Diagram" className="w-full rounded" />
+                  ) : (
+                    <span>Diagram snapshot saved</span>
+                  )}
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>

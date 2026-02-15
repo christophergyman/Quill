@@ -6,8 +6,7 @@ const logger = createLogger('tray')
 
 interface TrayCallbacks {
   onToggleOverlay: () => void
-  onOpenSettings: () => void
-  onOpenLibrary: () => void
+  onOpenApp: () => void
   onQuit: () => void
 }
 
@@ -42,17 +41,10 @@ export function createTray(callbacks: TrayCallbacks): Tray {
     },
     { type: 'separator' },
     {
-      label: 'Library',
+      label: 'Open Quill',
       click: () => {
-        logger.debug('Menu: Library')
-        callbacks.onOpenLibrary()
-      }
-    },
-    {
-      label: 'Settings',
-      click: () => {
-        logger.debug('Menu: Settings')
-        callbacks.onOpenSettings()
+        logger.debug('Menu: Open Quill')
+        callbacks.onOpenApp()
       }
     },
     { type: 'separator' },

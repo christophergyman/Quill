@@ -2,13 +2,13 @@ import { BrowserWindow } from 'electron'
 import { join } from 'path'
 import { createLogger } from '../../shared/logger'
 
-const logger = createLogger('window-library')
+const logger = createLogger('window-app')
 
-export function createLibraryWindow(): BrowserWindow {
+export function createAppWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 900,
     height: 650,
-    title: 'Quill Library',
+    title: 'Quill',
     show: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -19,11 +19,11 @@ export function createLibraryWindow(): BrowserWindow {
   })
 
   if (process.env['ELECTRON_RENDERER_URL']) {
-    win.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#/library')
+    win.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#/app')
   } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/library' })
+    win.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/app' })
   }
 
-  logger.info('Library window created')
+  logger.info('App window created')
   return win
 }

@@ -62,11 +62,34 @@ describe('SessionDetail', () => {
     expect(copyToClipboard).toHaveBeenCalledWith('Hello world raw')
   })
 
-  it('delete button calls delete handler', () => {
+  it('delete button opens confirmation dialog and confirms delete', () => {
     const onDelete = vi.fn()
     render(<SessionDetail session={baseSession} onDelete={onDelete} />)
+
+    // Click the Delete button (trigger)
     fireEvent.click(screen.getByText('Delete'))
+
+    // Dialog should appear with confirmation text
+    expect(screen.getByText('Delete session?')).toBeInTheDocument()
+    expect(screen.getByText(/This action cannot be undone/)).toBeInTheDocument()
+
+    // Click the confirm Delete action in the dialog
+    const buttons = screen.getAllByText('Delete')
+    const confirmButton = buttons[buttons.length - 1]
+    fireEvent.click(confirmButton)
+
     expect(onDelete).toHaveBeenCalledWith('s-1')
+  })
+
+  it('delete dialog can be cancelled', () => {
+    const onDelete = vi.fn()
+    render(<SessionDetail session={baseSession} onDelete={onDelete} />)
+
+    fireEvent.click(screen.getByText('Delete'))
+    expect(screen.getByText('Delete session?')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Cancel'))
+    expect(onDelete).not.toHaveBeenCalled()
   })
 
   it('renders diagrams when present', () => {

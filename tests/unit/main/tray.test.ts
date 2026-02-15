@@ -39,8 +39,7 @@ describe('createTray', () => {
   it('creates tray with tooltip', () => {
     const callbacks = {
       onToggleOverlay: vi.fn(),
-      onOpenSettings: vi.fn(),
-      onOpenLibrary: vi.fn(),
+      onOpenApp: vi.fn(),
       onQuit: vi.fn()
     }
 
@@ -51,8 +50,7 @@ describe('createTray', () => {
   it('context menu has all expected items', () => {
     const callbacks = {
       onToggleOverlay: vi.fn(),
-      onOpenSettings: vi.fn(),
-      onOpenLibrary: vi.fn(),
+      onOpenApp: vi.fn(),
       onQuit: vi.fn()
     }
 
@@ -65,16 +63,14 @@ describe('createTray', () => {
     }>
     const labels = template.filter((item) => item.label).map((item) => item.label)
     expect(labels).toContain('Toggle Overlay')
-    expect(labels).toContain('Library')
-    expect(labels).toContain('Settings')
+    expect(labels).toContain('Open Quill')
     expect(labels).toContain('Quit Quill')
   })
 
   it('menu item clicks call correct callbacks', () => {
     const callbacks = {
       onToggleOverlay: vi.fn(),
-      onOpenSettings: vi.fn(),
-      onOpenLibrary: vi.fn(),
+      onOpenApp: vi.fn(),
       onQuit: vi.fn()
     }
 
@@ -85,18 +81,14 @@ describe('createTray', () => {
       click?: () => void
     }>
     const toggleItem = template.find((item) => item.label === 'Toggle Overlay')
-    const libraryItem = template.find((item) => item.label === 'Library')
-    const settingsItem = template.find((item) => item.label === 'Settings')
+    const openAppItem = template.find((item) => item.label === 'Open Quill')
     const quitItem = template.find((item) => item.label === 'Quit Quill')
 
     toggleItem?.click?.()
     expect(callbacks.onToggleOverlay).toHaveBeenCalled()
 
-    libraryItem?.click?.()
-    expect(callbacks.onOpenLibrary).toHaveBeenCalled()
-
-    settingsItem?.click?.()
-    expect(callbacks.onOpenSettings).toHaveBeenCalled()
+    openAppItem?.click?.()
+    expect(callbacks.onOpenApp).toHaveBeenCalled()
 
     quitItem?.click?.()
     expect(callbacks.onQuit).toHaveBeenCalled()
@@ -105,8 +97,7 @@ describe('createTray', () => {
   it('returns a Tray instance', () => {
     const callbacks = {
       onToggleOverlay: vi.fn(),
-      onOpenSettings: vi.fn(),
-      onOpenLibrary: vi.fn(),
+      onOpenApp: vi.fn(),
       onQuit: vi.fn()
     }
 

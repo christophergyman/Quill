@@ -59,35 +59,7 @@ export async function getOverlayPage(app: ElectronApplication): Promise<Page> {
   return page
 }
 
-export async function openSettingsPage(app: ElectronApplication): Promise<Page> {
-  const preload = PRELOAD_PATH
-  const renderer = RENDERER_PATH
-  await app.evaluate(
-    async ({ BrowserWindow }, { preload, renderer }) => {
-      const win = new BrowserWindow({
-        width: 600,
-        height: 500,
-        title: 'Quill Settings',
-        show: true,
-        resizable: false,
-        webPreferences: {
-          preload,
-          contextIsolation: true,
-          nodeIntegration: false,
-          sandbox: false
-        }
-      })
-      win.loadFile(renderer, { hash: '/settings' })
-    },
-    { preload, renderer }
-  )
-
-  const page = await waitForWindow(app, /settings/)
-  await page.waitForSelector('#root', { timeout: 5_000 })
-  return page
-}
-
-export async function openLibraryPage(app: ElectronApplication): Promise<Page> {
+export async function openAppPage(app: ElectronApplication): Promise<Page> {
   const preload = PRELOAD_PATH
   const renderer = RENDERER_PATH
   await app.evaluate(
@@ -95,7 +67,7 @@ export async function openLibraryPage(app: ElectronApplication): Promise<Page> {
       const win = new BrowserWindow({
         width: 900,
         height: 650,
-        title: 'Quill Library',
+        title: 'Quill',
         show: true,
         webPreferences: {
           preload,
@@ -104,14 +76,21 @@ export async function openLibraryPage(app: ElectronApplication): Promise<Page> {
           sandbox: false
         }
       })
-      win.loadFile(renderer, { hash: '/library' })
+      win.loadFile(renderer, { hash: '/app' })
     },
     { preload, renderer }
   )
 
-  const page = await waitForWindow(app, /library/)
+  const page = await waitForWindow(app, /app/)
   await page.waitForSelector('#root', { timeout: 5_000 })
   return page
+}
+
+export async function navigateToSettings(page: Page): Promise<void> {
+  await page
+    .locator('button[data-slot="button"]', { has: page.locator('svg.lucide-settings') })
+    .click()
+  await page.locator('nav button', { hasText: 'General' }).waitFor({ state: 'visible' })
 }
 
 async function waitForWindow(

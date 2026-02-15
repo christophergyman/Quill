@@ -1,10 +1,10 @@
-import { test, expect, type AppContext, launchApp, closeApp, openLibraryPage } from './fixtures'
+import { test, expect, type AppContext, launchApp, closeApp, openAppPage } from './fixtures'
 import type { ElectronApplication, Page } from '@playwright/test'
 
 async function seedSession(electronApp: ElectronApplication) {
   return electronApp.evaluate(async () => {
     const db = (globalThis as any).__quillTestDb
-    const sessionId = 'test-session-001'
+    const sessionId = '00000000-0000-4000-a000-000000000001'
     const now = new Date().toISOString()
 
     db.prepare(
@@ -34,8 +34,8 @@ async function seedSession(electronApp: ElectronApplication) {
 async function seedSessionWithDiagram(electronApp: ElectronApplication) {
   return electronApp.evaluate(async () => {
     const db = (globalThis as any).__quillTestDb
-    const sessionId = 'test-session-diagram'
-    const diagramId = 'test-diagram-001'
+    const sessionId = '00000000-0000-4000-a000-000000000002'
+    const diagramId = '00000000-0000-4000-a000-000000000003'
     const now = new Date().toISOString()
 
     db.prepare(
@@ -85,7 +85,7 @@ test.describe.serial('Library Window', () => {
   test.beforeAll(async () => {
     ctx = await launchApp()
     electronApp = ctx.app
-    libraryPage = await openLibraryPage(electronApp)
+    libraryPage = await openAppPage(electronApp)
   })
 
   test.afterAll(async () => {
@@ -135,7 +135,7 @@ test.describe.serial('Library Window', () => {
     await expect(libraryPage.locator('h3', { hasText: 'Raw Transcription' })).toBeVisible()
 
     // Duration appears in the detail pane metadata
-    await expect(libraryPage.locator('.flex-1 >> text=45s').first()).toBeVisible()
+    await expect(libraryPage.locator('span', { hasText: '45s' }).first()).toBeVisible()
   })
 
   test('session detail has Copy and Delete buttons', async () => {
@@ -156,6 +156,8 @@ test.describe.serial('Library Window', () => {
 
     await libraryPage.locator('button', { hasText: 'Test Recording' }).click()
     await libraryPage.locator('button', { hasText: 'Delete' }).click()
+    // Confirm in AlertDialog
+    await libraryPage.locator('[role="alertdialog"] button', { hasText: 'Delete' }).click()
 
     await expect(libraryPage.locator('button', { hasText: 'Test Recording' })).toHaveCount(0)
     await expect(libraryPage.locator('text=No sessions yet')).toBeVisible()
@@ -166,7 +168,7 @@ test.describe.serial('Library Window', () => {
     await libraryPage.reload()
     await libraryPage.waitForSelector('#root', { timeout: 5_000 })
 
-    const badge = libraryPage.locator('span.text-blue-600', { hasText: 'diagram' })
+    const badge = libraryPage.locator('[data-slot="badge"]', { hasText: 'diagram' })
     await expect(badge).toBeVisible()
   })
 })
