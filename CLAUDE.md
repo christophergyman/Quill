@@ -71,6 +71,42 @@ bun run validate       Run all checks (lint + typecheck + tests)
 - Coverage via v8 with text + HTML reporters
 - Pre-commit: lint-staged + unit tests with --bail
 
+## Troubleshooting & Gotchas
+
+### better-sqlite3 native binary issues
+
+- better-sqlite3 compiles a native `.node` binary that must match the runtime (Electron vs Node)
+- `bun run test` (vitest) uses **Node**, `bun run dev` uses **Electron** — they need different binaries
+- The `scripts/ensure-electron-native.mjs` script auto-restores the Electron binary before dev/build/package via pre-hooks
+- If tests fail with `NODE_MODULE_VERSION mismatch`, run `bun install` to restore the Node binary, then `bun run test`
+- The binary cache lives in `node_modules/.cache/e2e-rebuild/` — delete it to force a full rebuild
+
+### Environment variables
+
+- Copy `.env.example` to `.env` for local development
+- `OPENAI_API_KEY` — required for cloud Whisper transcription and OpenAI LLM cleanup
+- `OLLAMA_URL` — defaults to `http://localhost:11434`, only needed if using local LLM
+- API keys in production are encrypted via Electron's `safeStorage` and stored via `electron-store`
+
+### macOS permissions
+
+- **Microphone access:** required for audio recording — macOS will prompt on first use
+- **Screen Recording:** required for overlay window — must be granted in System Settings > Privacy
+- If permissions are denied, the app won't crash but recording/overlay features will silently fail
+
+### Common pitfalls
+
+- Zustand stores persist between tests if not reset in `beforeEach` — always call `store.setState(initialState)`
+- The preload bridge (`window.api`) is mocked globally in `tests/setup.ts` — renderer tests get this automatically
+- tldraw components require canvas support — `@napi-rs/canvas` is installed as a dev dependency for jsdom
+- IPC channels are string constants in `src/shared/types/ipc.ts` — always use the `IpcChannel` enum, never raw strings
+- Database migrations run automatically on app start — add new migrations in `src/main/storage/migrations.ts`
+
+### Test factories
+
+- Use `tests/helpers/factories.ts` for creating mock data (Session, Diagram, Settings, etc.)
+- Factories accept `Partial<T>` overrides and generate unique IDs automatically
+
 ## Pre-Commit Workflow
 
 1. Run `bun run validate` — runs lint, typecheck, and all tests
