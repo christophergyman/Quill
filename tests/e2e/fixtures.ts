@@ -28,7 +28,28 @@ export async function launchApp(): Promise<AppContext> {
 }
 
 export async function closeApp(ctx: AppContext) {
-  await ctx.app.close()
+  const CLOSE_TIMEOUT = 5_000
+
+  const pid = ctx.app.process().pid
+
+  try {
+    await Promise.race([
+      ctx.app.close(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('app.close() timed out')), CLOSE_TIMEOUT)
+      )
+    ])
+  } catch {
+    // close() timed out or failed — force-kill the process
+    if (pid) {
+      try {
+        process.kill(pid, 'SIGKILL')
+      } catch {
+        // already dead
+      }
+    }
+  }
+
   rmSync(ctx.userData, { recursive: true, force: true })
 }
 

@@ -1,2 +1,3 @@
+node scripts/clean-test-processes.mjs --silent
 bun run lint-staged
 bun run test:unit --run --bail 1
