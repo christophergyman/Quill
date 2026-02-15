@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { DEFAULT_SETTINGS } from '../../../../../src/shared/types/settings'
 
@@ -14,6 +14,13 @@ import { SettingsRoot } from '../../../../../src/renderer/components/settings/Se
 import { useSettings } from '../../../../../src/renderer/hooks/useSettings'
 
 describe('SettingsRoot', () => {
+  beforeEach(() => {
+    ;(useSettings as ReturnType<typeof vi.fn>).mockReturnValue({
+      settings: DEFAULT_SETTINGS,
+      loading: false,
+      updateSettings: vi.fn()
+    })
+  })
   it('renders tab navigation', () => {
     render(<SettingsRoot />)
     // Use getAllByText since "General" appears as both tab button and heading
@@ -48,5 +55,21 @@ describe('SettingsRoot', () => {
 
     render(<SettingsRoot />)
     expect(screen.getByText('Loading settings...')).toBeInTheDocument()
+  })
+
+  it('renders back button when onBack is provided', () => {
+    const onBack = vi.fn()
+    render(<SettingsRoot onBack={onBack} />)
+
+    const backButton = screen.getByRole('button', { name: /library/i })
+    expect(backButton).toBeInTheDocument()
+
+    fireEvent.click(backButton)
+    expect(onBack).toHaveBeenCalled()
+  })
+
+  it('does not render back button when onBack is not provided', () => {
+    render(<SettingsRoot />)
+    expect(screen.queryByRole('button', { name: /library/i })).not.toBeInTheDocument()
   })
 })

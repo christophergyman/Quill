@@ -2,8 +2,7 @@ import { app, BrowserWindow, globalShortcut } from 'electron'
 import { join } from 'path'
 import { createTray } from './tray'
 import { createOverlayWindow } from './windows/overlay'
-import { createSettingsWindow } from './windows/settings'
-import { createLibraryWindow } from './windows/library'
+import { createAppWindow } from './windows/app'
 import { registerIpcHandlers } from './ipc/handlers'
 import { registerShortcuts } from './shortcuts'
 import { setLogFilePath, createLogger } from '../shared/logger'
@@ -20,8 +19,7 @@ if (process.env.NODE_ENV === 'production') {
 const logger = createLogger('main')
 
 let overlayWindow: BrowserWindow | null = null
-let settingsWindow: BrowserWindow | null = null
-let libraryWindow: BrowserWindow | null = null
+let appWindow: BrowserWindow | null = null
 let overlayMode: 'passthrough' | 'drawing' = 'passthrough'
 
 if (process.env.QUILL_TEST_USER_DATA) {
@@ -51,19 +49,12 @@ app
     try {
       createTray({
         onToggleOverlay: () => toggleOverlay(),
-        onOpenSettings: () => {
-          if (!settingsWindow || settingsWindow.isDestroyed()) {
-            settingsWindow = createSettingsWindow()
+        onOpenApp: () => {
+          if (!appWindow || appWindow.isDestroyed()) {
+            appWindow = createAppWindow()
           }
-          settingsWindow.show()
-          settingsWindow.focus()
-        },
-        onOpenLibrary: () => {
-          if (!libraryWindow || libraryWindow.isDestroyed()) {
-            libraryWindow = createLibraryWindow()
-          }
-          libraryWindow.show()
-          libraryWindow.focus()
+          appWindow.show()
+          appWindow.focus()
         },
         onQuit: () => app.quit()
       })

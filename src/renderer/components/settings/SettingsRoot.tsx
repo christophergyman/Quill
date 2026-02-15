@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ArrowLeft } from 'lucide-react'
 import { useSettings } from '../../hooks/useSettings'
 import { GeneralTab } from './GeneralTab'
 import { VoiceTab } from './VoiceTab'
@@ -10,22 +11,35 @@ import { cn } from '../../lib/utils'
 const TABS = ['General', 'Voice', 'LLM', 'Shortcuts', 'About'] as const
 type Tab = (typeof TABS)[number]
 
-export function SettingsRoot() {
+interface SettingsRootProps {
+  onBack?: () => void
+}
+
+export function SettingsRoot({ onBack }: SettingsRootProps) {
   const [activeTab, setActiveTab] = useState<Tab>('General')
   const { settings, loading, updateSettings } = useSettings()
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background text-muted-foreground text-sm">
+      <div className="flex h-full items-center justify-center bg-background text-muted-foreground text-sm">
         Loading settings...
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-full bg-background">
       {/* Sidebar tabs */}
-      <nav className="w-48 border-r border-border p-3 pt-8">
+      <nav className="w-48 border-r border-border p-3 pt-4">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+          >
+            <ArrowLeft className="size-4" />
+            Library
+          </button>
+        )}
         {TABS.map((tab) => (
           <button
             key={tab}

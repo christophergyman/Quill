@@ -1,4 +1,12 @@
-import { test, expect, type AppContext, launchApp, closeApp, openSettingsPage } from './fixtures'
+import {
+  test,
+  expect,
+  type AppContext,
+  launchApp,
+  closeApp,
+  openAppPage,
+  navigateToSettings
+} from './fixtures'
 import type { ElectronApplication, Page } from '@playwright/test'
 
 test.describe.serial('Settings Window', () => {
@@ -9,7 +17,8 @@ test.describe.serial('Settings Window', () => {
   test.beforeAll(async () => {
     ctx = await launchApp()
     electronApp = ctx.app
-    settingsPage = await openSettingsPage(electronApp)
+    settingsPage = await openAppPage(electronApp)
+    await navigateToSettings(settingsPage)
   })
 
   test.afterAll(async () => {
@@ -21,15 +30,15 @@ test.describe.serial('Settings Window', () => {
     await expect(heading).toBeVisible()
 
     const navButtons = settingsPage.locator('nav button')
-    await expect(navButtons).toHaveCount(5)
+    await expect(navButtons).toHaveCount(6)
   })
 
   test('General tab has toggles and language select', async () => {
     const switches = settingsPage.locator('button[role="switch"]')
     await expect(switches).toHaveCount(2)
 
-    const languageSelect = settingsPage.locator('select').last()
-    await expect(languageSelect).toHaveValue('en')
+    const languageTrigger = settingsPage.locator('button[data-slot="select-trigger"]').last()
+    await expect(languageTrigger).toContainText('English')
   })
 
   test('can toggle launch-at-login', async () => {
@@ -44,9 +53,10 @@ test.describe.serial('Settings Window', () => {
   })
 
   test('can change language select', async () => {
-    const languageSelect = settingsPage.locator('select').last()
-    await languageSelect.selectOption('es')
-    await expect(languageSelect).toHaveValue('es')
+    const languageTrigger = settingsPage.locator('button[data-slot="select-trigger"]').last()
+    await languageTrigger.click()
+    await settingsPage.locator('[data-slot="select-item"]', { hasText: 'Spanish' }).click()
+    await expect(languageTrigger).toContainText('Spanish')
   })
 
   test('navigate to Voice tab', async () => {
@@ -71,16 +81,19 @@ test.describe.serial('Settings Window', () => {
     await settingsPage.locator('nav button', { hasText: 'Voice' }).click()
 
     // Select whisper-local backend
-    const backendSelect = settingsPage.locator('select').first()
-    await backendSelect.selectOption('whisper-local')
+    const backendTrigger = settingsPage.locator('button[data-slot="select-trigger"]').first()
+    await backendTrigger.click()
+    await settingsPage
+      .locator('[data-slot="select-item"]', { hasText: 'Whisper.cpp (Local)' })
+      .click()
 
     // API key should be hidden
     const apiKeyInput = settingsPage.locator('input[type="password"]')
     await expect(apiKeyInput).toHaveCount(0)
 
-    // Model select should appear (there are now 2 selects: backend + model, plus language)
-    const selects = settingsPage.locator('select')
-    await expect(selects).toHaveCount(3)
+    // Model select should appear (backend + model + language = 3 select triggers)
+    const triggers = settingsPage.locator('button[data-slot="select-trigger"]')
+    await expect(triggers).toHaveCount(3)
   })
 
   test('navigate to LLM tab', async () => {
@@ -100,8 +113,8 @@ test.describe.serial('Settings Window', () => {
     await toggle.click()
     await expect(toggle).toHaveAttribute('aria-checked', 'true')
 
-    const backendSelect = settingsPage.locator('select').first()
-    await expect(backendSelect).toBeVisible()
+    const backendTrigger = settingsPage.locator('button[data-slot="select-trigger"]').first()
+    await expect(backendTrigger).toBeVisible()
 
     const apiKeyInput = settingsPage.locator('input[type="password"]')
     await expect(apiKeyInput).toBeVisible()
@@ -134,16 +147,17 @@ test.describe.serial('Settings Window', () => {
     await settingsPage.locator('nav button', { hasText: 'General' }).click()
 
     // Change language to French
-    const languageSelect = settingsPage.locator('select').last()
-    await languageSelect.selectOption('fr')
-    await expect(languageSelect).toHaveValue('fr')
+    const languageTrigger = settingsPage.locator('button[data-slot="select-trigger"]').last()
+    await languageTrigger.click()
+    await settingsPage.locator('[data-slot="select-item"]', { hasText: 'French' }).click()
+    await expect(languageTrigger).toContainText('French')
 
     // Switch to Voice tab and back
     await settingsPage.locator('nav button', { hasText: 'Voice' }).click()
     await settingsPage.locator('nav button', { hasText: 'General' }).click()
 
     // Language should still be French
-    const languageSelectAfter = settingsPage.locator('select').last()
-    await expect(languageSelectAfter).toHaveValue('fr')
+    const languageTriggerAfter = settingsPage.locator('button[data-slot="select-trigger"]').last()
+    await expect(languageTriggerAfter).toContainText('French')
   })
 })

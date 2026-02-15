@@ -1,10 +1,16 @@
 import { useEffect } from 'react'
+import { Settings } from 'lucide-react'
 import { useSession } from '../../hooks/useSession'
 import { SessionList } from './SessionList'
 import { SessionDetail } from './SessionDetail'
 import { Input } from '../ui/input'
+import { Button } from '../ui/button'
 
-export function LibraryRoot() {
+interface LibraryRootProps {
+  onOpenSettings?: () => void
+}
+
+export function LibraryRoot({ onOpenSettings }: LibraryRootProps) {
   const {
     sessions,
     currentSession,
@@ -21,11 +27,18 @@ export function LibraryRoot() {
   }, [loadSessions])
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-full bg-background">
       {/* Sidebar */}
       <div className="w-80 border-r border-border flex flex-col">
         <div className="p-4 border-b border-border">
-          <h1 className="text-lg font-semibold text-foreground mb-3">Library</h1>
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-lg font-semibold text-foreground">Library</h1>
+            {onOpenSettings && (
+              <Button variant="ghost" size="icon-sm" onClick={onOpenSettings}>
+                <Settings className="size-4" />
+              </Button>
+            )}
+          </div>
           <Input
             type="text"
             placeholder="Search sessions..."
